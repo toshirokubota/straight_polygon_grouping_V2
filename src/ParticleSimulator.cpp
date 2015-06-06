@@ -17,10 +17,6 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 	{
 		(*it)->updateEvent();
 	}
-	{
-		vector<Snapshot> shots = Snapshot::TakeSnapshot(time);
-		snapshots.insert(snapshots.end(), shots.begin(), shots.end());
-	}
 	int iter = 0;
 	while (time < endtime)
 	{
@@ -28,16 +24,18 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		MovingParticle* p = MovingParticle::getNextEvent();
 		if (p == NULL) break;
 		if (p->getEvent().t > endtime) break;
+		if (p->id == 232)
+			iter += 0;
 
 		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
 		{
 			(*it)->update(p->getEvent().t - time);
 		}
 		time = p->getEvent().t;
-		if (p->applyEvent() == false) break;
+		pair<MovingParticle*, MovingParticle*> pnew = p->applyEvent();
 		p->getEvent().print();
 
-		MovingParticle::removeUnstable();
+		//MovingParticle::removeUnstable();
 		if (time >= snapTime)
 		{
 			vector<Snapshot> shots = Snapshot::TakeSnapshot(time);
@@ -281,101 +279,6 @@ ParticleSimulator::SaveDoneEvents()
 }
 
 
-/*
-a snapshot provides neighborhood information at a particular point in time. We try to reproduce the configuration of the system 
-as accurately as possible. We need to consider the following steps.
-1. all particles that are created after the time point need to be removed from the system.
-2. all particles that are still active at the time point need to be activated.
-3. children of a particle need to be erased if they are created after the time point.
-*/
-bool
-ParticleSimulator::Restore(vector<Snapshot>& snapshots)
-{
-	ParticleFactory* factory = ParticleFactory::getInstance();
-	float time0 = 0;
-	for (int i = 0; i < snapshots.size(); ++i)
-	{
-		if (snapshots[i].getCreationTime() > time0)
-		{
-			time0 = snapshots[i].getCreationTime();
-		}
-	}
-	time = time0;
-	for (int i = 0; i < factory->particles.size(); ++i)
-	{
-		MovingParticle* p = factory->particles[i];
-		for (int j = 0; j < 2; ++j)
-		{
-			if (p->children[j] != NULL && p->children[j]->created > time)
-			{
-				p->children[j] = NULL;
-			}
-		}
-	}
-
-	vector<MovingParticle*> toremove;
-	for (int i = 0; i < factory->particles.size(); ++i)
-	{
-		MovingParticle* p = factory->particles[i];
-		if (p->created > time)
-		{
-			toremove.push_back(p);
-		}
-	}
-	//activate those that are still active.
-	vector<MovingParticle*> toactivate;
-	for (int i = 0; i < factory->particles.size(); ++i)
-	{
-		MovingParticle* p = factory->particles[i];
-		if (p->bActive == false && p->created < time && p->time > time)
-		{
-			toactivate.push_back(p);
-		}
-	}
-
-	//set neighbors
-	for (int i = 0; i < snapshots.size(); ++i)
-	{
-		float t = snapshots[i].getCreationTime();
-		for (int j = 0; j < snapshots[i].size(); ++j)
-		{
-			int id = snapshots[i].get(j);
-			int id0 = snapshots[i].get(j == 0 ? snapshots[i].size() - 1 : j - 1);
-			int id2 = snapshots[i].get(j == snapshots[i].size() - 1 ? 0 : j + 1);
-			MovingParticle* p = factory->get(id);
-			if (p == NULL)
-			{
-				return false;
-			}
-			p->setNeighbors(p, factory->get(id0), factory->get(id2));
-		}
-	}
-
-	//delete future particles from memory
-	for (int i = 0; i < toremove.size(); ++i)
-	{
-		factory->remove(toremove[i]);
-	}
-	//factory->activeSet.clear();
-	for (int i = 0; i < toactivate.size(); ++i)
-	{
-		factory->activeSet.insert(toactivate[i]);
-	}
-	//recalculate positions
-	for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
-	{
-		MovingParticle* p = *it;
-		p->p = p->project(time);
-		p->time = time;
-	}
-	//recalculate events
-	for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
-	{
-		(*it)->event.type == UnknownEvent;
-		(*it)->updateEvent();
-	}
-	return true;
-}
 
 bool
 ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)

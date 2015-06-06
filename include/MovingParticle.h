@@ -81,7 +81,7 @@ public:
 	}
 	bool updateEvent();
 	bool initializeVelocity();
-	bool applyEvent();
+	pair<MovingParticle*,MovingParticle*> applyEvent();
 	vector<float> dump2vector(); //store the current state as a vector of float 
 	EventStruct findNextEdgeEvent() const;
 	EventStruct findNextSplitEvent() const;
@@ -94,10 +94,6 @@ public:
 		p->prev->next = p;
 		p->next->prev = p;
 		p->reflexive = GetVisualAngle2(p->prev->p.m_X, p->prev->p.m_Y, p->next->p.m_X, p->next->p.m_Y, p->p.m_X, p->p.m_Y);
-		p->dependent.insert(prev);
-		p->dependent.insert(next);
-		prev->dependent.insert(p);
-		next->dependent.insert(p);
 		p->rear = prev->front;
 		p->front = next->rear;
 	}
@@ -106,7 +102,7 @@ public:
 	static MovingParticle* getNextEvent();
 	static vector<MovingParticle*> getNextEvents(float eps = 1.0e-6);
 	//static vector<vector<CParticleF>> takeSnapshots();
-	static void removeUnstable(); //remove kinks and duplicates.
+	//static void removeUnstable(); //remove kinks and duplicates.
 	static void quickFinish(); //remove polygons with less than 4 vertices.
 	static bool sanityCheck();
 	static vector<vector<MovingParticle*>> clusterParticles();
@@ -115,7 +111,7 @@ public:
 	static vector<vector<MovingParticle*>> closedRegions(vector<MovingParticle*>& points);
 	static pair<MovingParticle*, float> findIntersection(MovingParticle* p, MovingParticle* q);
 	static float intersectSideAndLine(const MovingParticle* p, const MovingParticle* q, const MovingParticle* r);
-	static void traceAndHandleUnstable(MovingParticle* p, vector<MovingParticle*>& removed);
+	static MovingParticle* traceAndHandleUnstable(MovingParticle* p);
 	static bool correctOvershoot(MovingParticle* p, MovingParticle* q, pair<float, float> param);
 
 private:
@@ -147,23 +143,7 @@ private:
 	float MovingParticle::_splitTime(const MovingParticle* q, const MovingParticle* r, float eps = 1.0e-3) const;
 	bool _onSideAt(const MovingParticle* q, float t, float eps = 1.0e-3) const;
 	void _setParents(EventStruct cause);
-	//bool calculateVelocity(bool leaf = false);
 	bool calculateVelocityR();
-
-	bool addDependent(MovingParticle* p)
-	{
-		dependent.insert(p);
-	}
-	bool removeDependent(MovingParticle* p)
-	{
-		set<MovingParticle*>::iterator it = dependent.find(p);
-		if (it == dependent.end())	return false;
-		else
-		{
-			dependent.erase(it);
-			return true;
-		}
-	}
 
 	StationaryParticle* init_particle;
 	CParticleF p0;
@@ -188,7 +168,6 @@ private:
 	float reflexive; //measure of reflexivenessbReflexive
 	EventStruct event;
 	float v[2];
-	set<MovingParticle*> dependent;
 	Polygon* polygon;
 	static int _id;
 };

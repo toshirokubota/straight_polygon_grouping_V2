@@ -19,6 +19,11 @@ public:
 		}
 		return c;
 	}
+	bool operator==(const Polygon& poly) const
+	{
+		if (poly.particles.size() != particles.size()) return false;
+		return pset == poly.pset;
+	}
 
 private:
 	Polygon(vector<MovingParticle*>& vp, float creation_time)
@@ -28,8 +33,13 @@ private:
 		this->creation_time = creation_time;
 		id = _id++;
 		level = 0;
+		for (int i = 0; i < vp.size(); ++i)
+		{
+			pset.insert(vp[i]);
+		}
 	}
 	vector<MovingParticle*> particles;
+	set<MovingParticle*> pset;
 	float creation_time;
 	int level;
 	int id;

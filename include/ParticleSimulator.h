@@ -12,7 +12,6 @@ public:
 	}
 	virtual bool Prepare(vector<StationaryParticle*>& points, vector<pair<int, int>>& edges, float delta0 = 0.01);
 	bool LoadParticles(vector<float>& state, const int* dims);
-	virtual bool Restore(vector<Snapshot>& snapshots);
 	mxArray* SaveParticles();
 	mxArray* SaveDoneEvents();
 	mxArray* SaveConvexity();
@@ -28,7 +27,6 @@ public:
 	vector<Snapshot> traces; //the trace of each offset polygon in polygons
 protected:
 	bool initializePolygon(vector<MovingParticle*>& particles);
-	bool _Restore(Snapshot& snapshot);
 	float time;
 };
 

@@ -17,14 +17,13 @@ Snapshot::TakeSnapshot(float time)
 			if (pset.find(p) == pset.end())
 			{
 				vector<MovingParticle*> vp = MovingParticle::vectorize(p);
-				Snapshot shot(time, time);
+				Snapshot shot(time, time, vp);
+				bdone = false;
+				polygons.push_back(shot);
 				for (int i = 0; i < vp.size(); ++i)
 				{
 					pset.insert(vp[i]);
-					shot.add(vp[i]->getId());
 				}
-				bdone = false;
-				polygons.push_back(shot);
 			}
 		}
 		if (bdone) break;
@@ -32,7 +31,7 @@ Snapshot::TakeSnapshot(float time)
 	return polygons;
 }
 
-Snapshot
+/*Snapshot
 Snapshot::LoadSnapshot(const mxArray* ptr)
 {
 	ParticleFactory* factory = ParticleFactory::getInstance();
@@ -66,28 +65,26 @@ Snapshot::LoadSnapshot(const mxArray* ptr)
 		}
 		return shot;
 	}
-}
+}*/
 
 mxArray*
 Snapshot::StoreSnapshot(Snapshot& snapshot)
 {
 	ParticleFactory* factory = ParticleFactory::getInstance();
-	const int dims[] = { snapshot.particles.size(), 5 };
+	vector<CParticleF> shape = snapshot.polygon->project(snapshot.getProjectionTime());
+	const int dims[] = { shape.size(), 4 };
 	vector<float> F(dims[0] * dims[1]);
 	for (int j = 0; j < dims[0]; ++j)
 	{
-		MovingParticle* p = factory->get(snapshot.particles[j]);
-		CParticleF p0 = p->project(Max(p->getCreatedTime(), snapshot.projection_time));
-		SetData2(F, j, 0, dims[0], dims[1], p0.m_X);
-		SetData2(F, j, 1, dims[0], dims[1], p0.m_Y);
+		SetData2(F, j, 0, dims[0], dims[1], shape[j].m_X);
+		SetData2(F, j, 1, dims[0], dims[1], shape[j].m_Y);
 		SetData2(F, j, 2, dims[0], dims[1], snapshot.projection_time);
 		SetData2(F, j, 3, dims[0], dims[1], snapshot.created_time);
-		SetData2(F, j, 4, dims[0], dims[1], (float)p->getId());
 	}
 	return StoreData(F, mxSINGLE_CLASS, 2, dims);
 }
 
-vector<Snapshot>
+/*vector<Snapshot>
 Snapshot::LoadSnapshots(const mxArray* ptr)
 {
 	int n = mxGetNumberOfElements(ptr);
@@ -98,7 +95,7 @@ Snapshot::LoadSnapshots(const mxArray* ptr)
 		snapshots[i] = LoadSnapshot(cell);
 	}
 	return snapshots;
-}
+}*/
 
 
 mxArray*

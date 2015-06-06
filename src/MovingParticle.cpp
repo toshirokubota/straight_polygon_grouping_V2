@@ -561,10 +561,9 @@ MovingParticle::updateEvent()
 }
 
 
-bool 
+pair<MovingParticle*, MovingParticle*>
 MovingParticle::applyEvent()
 {
-
 	float eps = 1.0e-3;
 	MovingParticle* p = this;
 	MovingParticle* q = (MovingParticle*)event.q;
@@ -610,67 +609,29 @@ MovingParticle::applyEvent()
 		if (pnew[i]->calculateVelocityR() == false)
 		{
 			pnew[i]->bUnstable = true;
+			MovingParticle* ptmp = pnew[i];
+			pnew[i] = traceAndHandleUnstable(pnew[i]);
+			factory->inactivate(ptmp);
 		}
 		updatePolygon(pnew[i]);
 	}
 
-	//update dependency
-	for (int i = 0; i < 2; ++i)
-	{
-		if (pnew[i] != NULL)
-		{
-			factory->updateQueue.insert(pnew[i]);
-			factory->updateQueue.insert(pnew[i]->prev); //possibly a new collision into the new particle.
-		}
-	}
-	if (event.type == EdgeEvent)
-	{
-		//if a new side has a wider angle, add other concave vertices to the update queue.
-		if (frontPropAngle(this->prev, this) < frontPropAngle(pnew[0]->prev, pnew[0]) ||
-			frontPropAngle(q, q->next) < frontPropAngle(pnew[0], pnew[0]->next))
-		{
-			for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
-			{
-				/////TK if ((*it)->isConcave())
-				if ((*it)->event.type != EdgeEvent)
-				{
-					factory->updateQueue.insert(*it);
-				}
-			}
-		}
-	}
-	for (set<MovingParticle*>::iterator it = dependent.begin(); it != dependent.end(); ++it)
-	{
-		factory->updateQueue.insert(*it);
-	}
-	for (set<MovingParticle*>::iterator it = q->dependent.begin(); it != q->dependent.end(); ++it)
-	{
-		factory->updateQueue.insert(*it);
-	}
-	((MovingParticle*)event.q)->removeDependent(this);
-	if (event.type == SplitEvent && r != NULL)
-	{
-		for (set<MovingParticle*>::iterator it = r->dependent.begin(); it != r->dependent.end(); ++it)
-		{
-			factory->updateQueue.insert(*it);
-		}
-		((MovingParticle*)event.r)->removeDependent(this);
-	}
-	return true;
+	return 	pair<MovingParticle*, MovingParticle*> (pnew[0], pnew[1]);
+	;
 }
 
-void 
-MovingParticle::traceAndHandleUnstable(MovingParticle* p, vector<MovingParticle*>& unstable)
+MovingParticle*
+MovingParticle::traceAndHandleUnstable(MovingParticle* p)
 {
 	ParticleFactory* factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
 	if (p->bActive == false)
 	{
-		return;
+		return p;
 	}
 	if (p->prev == p->next)
 	{
-		return; //there are only two particles in this chain. quickFinish will take care of this.
+		return p; //there are only two particles in this chain. quickFinish will take care of this.
 	}
 	float dp = Distance(p->p, p->prev->p);
 	float dn = Distance(p->p, p->next->p);
@@ -690,34 +651,22 @@ MovingParticle::traceAndHandleUnstable(MovingParticle* p, vector<MovingParticle*
 		factory->inactivate(p->next);
 	}
 
-	factory->updateQueue.insert(q);
-	factory->updateQueue.insert(q->prev); //possibly a new collision into the new particle.
-	for (set<MovingParticle*>::iterator it = p->dependent.begin(); it != p->dependent.end(); ++it)
-	{
-		factory->updateQueue.insert(*it);
-	}
-	for (set<MovingParticle*>::iterator it = p->prev->dependent.begin(); it != p->prev->dependent.end(); ++it)
-	{
-		factory->updateQueue.insert(*it);
-	}
-	for (set<MovingParticle*>::iterator it = p->next->dependent.begin(); it != p->next->dependent.end(); ++it)
-	{
-		factory->updateQueue.insert(*it);
-	}
-
 	if (q->calculateVelocityR() == false)
 	{
 		MovingParticle* pnew = factory->makeParticle(sfactory.makeParticle(q->p), Axis, q->time);
 		pnew->children[0] = p;
 		pnew->children[1] = q;
-		traceAndHandleUnstable(q, unstable);
+		MovingParticle* q2 = traceAndHandleUnstable(q);
 		factory->inactivate(q);
 		factory->inactivate(pnew);
-		//unstable.push_back(q);
+		return q2;
+	}
+	else {
+		return q;
 	}
 }
 
-void
+/*void
 MovingParticle::removeUnstable()
 {
 	ParticleFactory* factory = ParticleFactory::getInstance();
@@ -754,7 +703,7 @@ MovingParticle::removeUnstable()
 	{
 		//printf("RemoveUpstable: %d unstable particles handled.\n", count);
 	}
-}
+}*/
 
 void
 MovingParticle::quickFinish()
