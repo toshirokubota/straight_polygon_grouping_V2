@@ -15,7 +15,7 @@ using namespace std;
 const float MP_EPSILON = 1.0e-2;
 const float ENDPOINT_SPEED = 1.0f; //Make it >1.0 to let the end points move faster.
 
-//enum MovingParticleType { Unknown, Initial, Regular, Merge, Collide, Split, Axis, Dummy };
+//enum MovingParticleType { Unknown, Initial, Regular, Merge, Collide, Split1, Split2, Collide1, Collide2, Axis, Dummy };
 MovingParticleType int2ParticleType(int i)
 {
 	MovingParticleType type = Unknown;
@@ -31,15 +31,21 @@ MovingParticleType int2ParticleType(int i)
 		type = Merge;
 		break;
 	case 4:
-		type = Collide;
+		type = Split1;
 		break;
 	case 5:
-		type = Split;
+		type = Split2;
 		break;
 	case 6:
-		type = Axis;
+		type = Collide1;
 		break;
 	case 7:
+		type = Collide2;
+		break;
+	case 8:
+		type = Axis;
+		break;
+	case 9:
 		type = Dummy;
 		break;
 	}
@@ -408,15 +414,15 @@ MovingParticle::_setParents(EventStruct cause)
 		{
 			x = re;
 		}
-		if (this->type == Split)
-		{
-			this->parents[0] = x;
-			this->parents[1] = pe;
-		}
-		else
+		if (this->type == Split1)
 		{
 			this->parents[0] = pe;
 			this->parents[1] = x;
+		}
+		else
+		{
+			this->parents[0] = x;
+			this->parents[1] = pe;
 		}
 	}
 	else if (cause.type == CollisionEvent)
@@ -624,14 +630,14 @@ MovingParticle::applyEvent()
 	MovingParticle* pnew[2] = { NULL, NULL };
 	if (event.type == EdgeEvent)
 	{
-		pnew[0] = factory->makeParticle(sp, Collide, event.t);
+		pnew[0] = factory->makeParticle(sp, Collide1, event.t);
 		setNeighbors(pnew[0], p->prev, p->next->next);
 		factory->inactivate(p);
 		factory->inactivate(q);
 	}
 	else if (event.type == SplitEvent)
 	{
-		pnew[0] = factory->makeParticle(sp, Split, event.t);
+		pnew[0] = factory->makeParticle(sp, Split1, event.t);
 		pnew[1] = factory->makeParticle(sp, Split2, event.t);
 
 		setNeighbors(pnew[0], event.p->prev, r);
@@ -688,16 +694,18 @@ MovingParticle::traceAndHandleUnstable(MovingParticle* p)
 	MovingParticle* q = NULL;
 	if (dp < dn)
 	{
-		q = factory->makeParticle(sfactory.makeParticle(p->prev->p), Merge, p->time);
+		q = factory->makeParticle(sfactory.makeParticle(p->prev->p), Split1, p->time);
 		q->setNeighbors(q, p->prev->prev, p->next);
-		q->_setParents(p->prev->event);
+		q->parents[0] = p->parents[1];
+		q->parents[1] = p->parents[0];
 		factory->inactivate(p->prev);
 	}
 	else
 	{
-		q = factory->makeParticle(sfactory.makeParticle(p->next->p), Merge, p->time);
+		q = factory->makeParticle(sfactory.makeParticle(p->next->p), Split2, p->time);
 		q->setNeighbors(q, p->prev, p->next->next);
-		q->_setParents(p->next->event);
+		q->parents[0] = p->parents[1];
+		q->parents[1] = p->parents[0];
 		factory->inactivate(p->next);
 	}
 
@@ -846,11 +854,11 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 			MovingParticle* p2 = p->next;
 			float t = param.first;
 			CParticleF p0(p->p.m_X*(1.0 - t) + p2->p.m_X*t, p->p.m_Y*(1.0 - t) + p2->p.m_Y*t);
-			MovingParticle* y = factory->makeParticle(sfactory.makeParticle(p0), Collide, time);
+			MovingParticle* y = factory->makeParticle(sfactory.makeParticle(p0), Collide1, time);
 			setNeighbors(y, p, q->next);
 			y->calculateVelocityR();
-			y->parents[0] = p2;
-			y->parents[1] = q;
+			y->parents[0] = p2; //TK?
+			y->parents[1] = q;  //TK?
 			factory->inactivate(p2);
 			factory->inactivate(q);
 			vector<MovingParticle*> vp1 = vectorize(y);
@@ -886,7 +894,7 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 				float t = isec[k].second;
 				MovingParticle* x = isec[k].first;
 				CParticleF p0(x->p.m_X*(1.0 - t) + x->next->p.m_X*t, x->p.m_Y*(1.0 - t) + x->next->p.m_Y*t);
-				pnew[k] = factory->makeParticle(sfactory.makeParticle(p0), Split, time);
+				pnew[k] = factory->makeParticle(sfactory.makeParticle(p0), Split1, time);
 			}
 
 			//inactivate some before changing the neighborhood configuration
@@ -902,8 +910,8 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 			setNeighbors(pnew[1], isec[1].first, rs[1]->next);
 			vector<MovingParticle*> vp1 = vectorize(pnew[0]);
 			vector<MovingParticle*> vp2 = vectorize(pnew[1]);
-			pnew[0]->parents[0] = rs[1];
-			pnew[1]->parents[1] = rs[1];
+			pnew[0]->parents[0] = rs[1]; //TK?
+			pnew[1]->parents[1] = rs[1]; //TK?
 			for (int k = 0; k < 2; ++k)
 			{
 				pnew[k]->calculateVelocityR();
@@ -987,6 +995,9 @@ MovingParticle::clusterParticles()
 void
 _traceBack(MovingParticle* p, vector<MovingParticle*>& trace, set<MovingParticle*>& pset)
 {
+	if (p == NULL){
+		p = NULL;
+	}
 	pset.insert(p);
 	if (p->getType() == Initial)
 	{

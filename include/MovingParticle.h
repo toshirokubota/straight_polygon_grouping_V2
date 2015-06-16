@@ -12,7 +12,7 @@ using namespace std;
 #include <MovingFront.h>
 #include <StationaryParticle.h>
 
-enum MovingParticleType { Unknown, Initial, Regular, Merge, Collide, Split, Split2, Collide1, Collide2, Axis, Dummy };
+enum MovingParticleType { Unknown, Initial, Regular, Merge, Split1, Split2, Collide1, Collide2, Axis, Dummy };
 struct ParticleFactory;
 class ParticleSimulator;
 class OffsetPolygonDAGBuilder;
