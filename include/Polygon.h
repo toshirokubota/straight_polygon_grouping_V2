@@ -1,6 +1,7 @@
 #pragma once
 #include <szParticleF.h>
 #include <vector>
+#include <set>
 using namespace std;
 
 class MovingParticle;
@@ -10,20 +11,16 @@ class Polygon
 {
 public:
 	friend PolygonFactory;
-	vector<CParticleF> project(float time)
-	{
-		vector<CParticleF> c;
-		for (int i = 0; i < particles.size(); ++i)
-		{
-			c.push_back(particles[i]->project(time));
-		}
-		return c;
-	}
+	vector<CParticleF> project(float time);
 	bool operator==(const Polygon& poly) const
 	{
 		if (poly.particles.size() != particles.size()) return false;
 		return pset == poly.pset;
 	}
+
+	int getId() const { return id; }
+	float getCreatedTime() const { return creation_time; }
+	vector<MovingParticle*> getParticles() const { return particles; }
 
 private:
 	Polygon(vector<MovingParticle*>& vp, float creation_time)

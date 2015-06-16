@@ -12,7 +12,7 @@ using namespace std;
 #include <MovingFront.h>
 #include <StationaryParticle.h>
 
-enum MovingParticleType { Unknown, Initial, Regular, Merge, Collide, Split, Axis, Dummy };
+enum MovingParticleType { Unknown, Initial, Regular, Merge, Collide, Split, Split2, Collide1, Collide2, Axis, Dummy };
 struct ParticleFactory;
 class ParticleSimulator;
 class OffsetPolygonDAGBuilder;
@@ -37,6 +37,7 @@ public:
 		}
 	}
 	void print(char* tab = "") const;
+	void printParentTree(char* tab = "") const;
 
 	StationaryParticle* getInitParticle() const { return init_particle; }
 	CParticleF getP0() const { return p0; }

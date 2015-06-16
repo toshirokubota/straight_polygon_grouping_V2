@@ -11,7 +11,7 @@ public:
 	{
 		parent = NULL;
 	}
-	vector<TreeNode<T>*> children;
+	std::vector<TreeNode<T>*> children;
 	TreeNode<T>* parent;
 };
 

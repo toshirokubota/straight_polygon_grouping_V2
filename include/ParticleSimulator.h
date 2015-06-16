@@ -2,6 +2,7 @@
 #include <MovingParticle.h>
 #include <mex.h>
 #include <Snapshot.h>
+#include <PolygonDAG.h>
 
 class ParticleSimulator
 {
@@ -25,6 +26,8 @@ public:
 	vector<Snapshot> closedRegions;
 	vector<Snapshot> polygons; //offset polygon
 	vector<Snapshot> traces; //the trace of each offset polygon in polygons
+
+	PolygonDAG dag;
 protected:
 	bool initializePolygon(vector<MovingParticle*>& particles);
 	float time;

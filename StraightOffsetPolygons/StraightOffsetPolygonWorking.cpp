@@ -29,6 +29,7 @@ using namespace std;
 #include <ParticleSimulator.h>
 
 GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
+GraphFactory<Polygon*>* GraphFactory<Polygon*>::_instance = NULL;
 ParticleFactory* ParticleFactory::_instance = NULL;
 
 int MovingParticle::_id = 0;
@@ -154,6 +155,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nlhs >= 5)
 	{
 		plhs[4] = Snapshot::StoreSnapshots(simulator.traces);
+		//plhs[3] = simulator.SaveDoneEvents();
+	}
+	if (nlhs >= 6)
+	{
+		simulator.dag.sort();
+		vector<Polygon*> polys = simulator.dag.getPolygons();
+		vector<Snapshot> snapshots;
+		for (int i = 0; i < polys.size(); ++i)
+		{
+			Snapshot shot(polys[i]->getCreatedTime(), polys[i]->getCreatedTime(), polys[i]->getParticles());
+			snapshots.push_back(shot);
+		}
+		plhs[5] = Snapshot::StoreSnapshots(snapshots);
 		//plhs[3] = simulator.SaveDoneEvents();
 	}
 

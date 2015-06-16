@@ -46,10 +46,32 @@ MovingParticleType int2ParticleType(int i)
 	return type;
 }
 
-void 
+void
 MovingParticle::print(char* tab) const
 {
 	printf("%s%d %3.3f %3.3f %3.3f %3.3f %3.3f %3.3f\n", tab, id, p0.m_X, p0.m_Y, p.m_X, p.m_Y, v[0], v[1]);
+}
+
+void
+MovingParticle::printParentTree(char* tab) const
+{
+	//if (this->parents[0] == NULL && this->parents[1] == NULL)
+	{
+		printf("%s%d %3.3f %3.3f %3.3f %3.3f %d\n", tab, id, p0.m_X, p0.m_Y, p.m_X, p.m_Y, type);
+	}
+	//else
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			if (this->parents[i] != NULL)
+			{
+				char tab2[256];
+				strcpy(tab2, tab);
+				strcat(tab2, "\t");
+				this->parents[i]->printParentTree(tab2);
+			}
+		}
+	}
 }
 
 vector<float>
@@ -375,12 +397,40 @@ MovingParticle::_setParents(EventStruct cause)
 	}
 	else if (cause.type == SplitEvent)
 	{
-		this->parents[0] = pe;
+		float dpq = Distance(p, qe->p);
+		float dpr = Distance(p, re->p);
+		MovingParticle* x = NULL;
+		if (dpq <= dpr)
+		{
+			x = qe;
+		}
+		else
+		{
+			x = re;
+		}
+		if (this->type == Split)
+		{
+			this->parents[0] = x;
+			this->parents[1] = pe;
+		}
+		else
+		{
+			this->parents[0] = pe;
+			this->parents[1] = x;
+		}
 	}
 	else if (cause.type == CollisionEvent)
 	{
-		this->parents[0] = pe;
-		this->parents[1] = qe;
+		if (this->type == Collide1)
+		{
+			this->parents[0] = qe;
+			this->parents[1] = pe;
+		}
+		else if (this->type == Collide2)
+		{
+			this->parents[0] = pe;
+			this->parents[1] = qe;
+		}
 	}
 }
 
@@ -582,7 +632,7 @@ MovingParticle::applyEvent()
 	else if (event.type == SplitEvent)
 	{
 		pnew[0] = factory->makeParticle(sp, Split, event.t);
-		pnew[1] = factory->makeParticle(sp, Split, event.t);
+		pnew[1] = factory->makeParticle(sp, Split2, event.t);
 
 		setNeighbors(pnew[0], event.p->prev, r);
 		setNeighbors(pnew[1], q, event.p->next);
@@ -590,8 +640,8 @@ MovingParticle::applyEvent()
 	}
 	else if (event.type == CollisionEvent) //colliding at two vertices
 	{
-		pnew[0] = factory->makeParticle(sp, Split, event.t);
-		pnew[1] = factory->makeParticle(sp, Split, event.t);
+		pnew[0] = factory->makeParticle(sp, Collide1, event.t);
+		pnew[1] = factory->makeParticle(sp, Collide2, event.t);
 		MovingParticle* x = (MovingParticle*)event.q;
 		MovingParticle* xn = x->next;
 		MovingParticle* xp = x->prev;

@@ -11,11 +11,16 @@ bool
 ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 {
 	ParticleFactory* factory = ParticleFactory::getInstance();
+	PolygonFactory& pfactory = PolygonFactory::getInstance();
 	float snapTime = delta;
 	bool bSuccess = true;
 	for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
 	{
 		(*it)->updateEvent();
+	}
+	{
+		vector<Snapshot> shots = Snapshot::TakeSnapshot(time);
+		snapshots.insert(snapshots.end(), shots.begin(), shots.end());
 	}
 	int iter = 0;
 	while (time < endtime)
@@ -33,6 +38,20 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		}
 		time = p->getEvent().t;
 		pair<MovingParticle*, MovingParticle*> pnew = p->applyEvent();
+		/*if (p->event.type == SplitEvent || p->event.type == CollisionEvent)
+		{
+			if (p->polygon->getId() == p->event.q->polygon->getId())
+			{
+				//split the same polygon into two
+				dag.add(p->polygon, pnew.first->polygon);
+				dag.add(p->polygon, pnew.second->polygon);
+			}
+			else {
+				//merge two polygons into one
+				dag.add(pnew.first->polygon, p->polygon);
+				dag.add(pnew.first->polygon, p->event.q->polygon);
+			}
+		}*/
 		p->getEvent().print();
 
 		//MovingParticle::removeUnstable();
@@ -56,27 +75,41 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		vector<vector<MovingParticle*>> regions = MovingParticle::clusterParticles();
 		for (int i = 0; i < regions.size(); ++i)
 		{
-			//if (clockWise(regions[i]) > 0)
+			vector<MovingParticle*> tr = MovingParticle::traceBackPolygon(regions[i]);
+			vector<vector<MovingParticle*>> areas = MovingParticle::closedRegions(tr);
+			if (time > 2.0 && time < 2.2)
 			{
-				vector<MovingParticle*> tr = MovingParticle::traceBackPolygon(regions[i]);
-				vector<vector<MovingParticle*>> areas = MovingParticle::closedRegions(tr);
+				printf("iter=%d, trace=%d\n", iter, i + 1);
+				for (int j = 0; j < regions[i].size(); ++j)
+				{
+					printf("%d %3.3f %3.3f %d\n", regions[i][j]->id, regions[i][j]->p0.m_X, regions[i][j]->p0.m_Y, regions[i][j]->type);
+				}
+				for (int j = 0; j < tr.size(); ++j)
+				{
+					printf("\t%d %3.3f %3.3f %d\n", tr[j]->id, tr[j]->p0.m_X, tr[j]->p0.m_Y, tr[j]->type);
+				}
 				for (int j = 0; j < areas.size(); ++j)
 				{
-					Snapshot shot(time, 0.0f, areas[j]);
-					if (find(closedRegions.begin(), closedRegions.end(), shot) == closedRegions.end())
+					for (int k = 0; k < areas[j].size(); ++k)
 					{
-						closedRegions.push_back(shot);
+						printf("\t\t%d %3.3f %3.3f %d\n", areas[j][k]->id, areas[j][k]->p0.m_X, areas[j][k]->p0.m_Y, areas[j][k]->type);
 					}
 				}
-				//if (tr.size() > 10) //forget small ones
+			}
+			for (int j = 0; j < areas.size(); ++j)
+			{
+				Snapshot shot(time, 0.0f, areas[j]);
+				if (find(closedRegions.begin(), closedRegions.end(), shot) == closedRegions.end())
 				{
-					Snapshot shot(time, 0.0f, tr);
-					if (find(traces.begin(), traces.end(), shot) == traces.end())
-					{
-						traces.push_back(Snapshot(time, 0, tr));
-						polygons.push_back(Snapshot(time, time, regions[i]));
-					}
+					closedRegions.push_back(shot);
+					Polygon* poly = pfactory.makePolygon(areas[j], time);
 				}
+			}
+			Snapshot shot(time, 0.0f, tr);
+			if (find(traces.begin(), traces.end(), shot) == traces.end())
+			{
+				traces.push_back(Snapshot(time, 0, tr));
+				polygons.push_back(Snapshot(time, time, regions[i]));
 			}
 		}
 
@@ -90,11 +123,8 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 	}
 	for (int i = 0; i < factory->particles.size(); ++i)
 	{
-		MovingParticle* p = factory->particles[i];
-		if (p->bActive == false && p->time > p->init_event_time && p->init_event_time >= 0)
-		{
-			printf("%d %f %f %f %d\n", p->id, p->created, p->time, p->init_event_time, p->event.type);
-		}
+		//printf("%d %f %f\n", factory->particles[i]->id, factory->particles[i]->p0.m_X, factory->particles[i]->p0.m_Y);
+		factory->particles[i]->printParentTree("\t");
 	}
 	return bSuccess;
 }
