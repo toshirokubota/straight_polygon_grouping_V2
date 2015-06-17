@@ -188,10 +188,10 @@ MovingParticle::updatePolygon(MovingParticle* p)
 MovingParticle*
 MovingParticle::getNextEvent()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	MovingParticle* p = NULL;
 	float time = std::numeric_limits<float>::infinity();
-	for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); it++)
+	for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); it++)
 	{
 		if ((*it)->event.t < time)
 		{
@@ -481,9 +481,9 @@ MovingParticle::findNextEdgeEvent() const
 EventStruct
 MovingParticle::findNextSplitEvent() const
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	EventStruct ev(std::numeric_limits<float>::infinity(), SplitEvent, this);
-	for (set<MovingParticle*>::iterator j = factory->activeSet.begin(); j != factory->activeSet.end(); ++j)
+	for (set<MovingParticle*>::iterator j = factory.activeSet.begin(); j != factory.activeSet.end(); ++j)
 	{
 		const MovingParticle* q = *j; 
 		const MovingParticle* r = q->next;
@@ -624,37 +624,37 @@ MovingParticle::applyEvent()
 	MovingParticle* p = this;
 	MovingParticle* q = (MovingParticle*)event.q;
 	MovingParticle* r = (MovingParticle*)event.r;
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
 	StationaryParticle* sp = sfactory.makeParticle(p->p);
 	MovingParticle* pnew[2] = { NULL, NULL };
 	if (event.type == EdgeEvent)
 	{
-		pnew[0] = factory->makeParticle(sp, Collide1, event.t);
+		pnew[0] = factory.makeParticle(sp, Collide1, event.t);
 		setNeighbors(pnew[0], p->prev, p->next->next);
-		factory->inactivate(p);
-		factory->inactivate(q);
+		factory.inactivate(p);
+		factory.inactivate(q);
 	}
 	else if (event.type == SplitEvent)
 	{
-		pnew[0] = factory->makeParticle(sp, Split1, event.t);
-		pnew[1] = factory->makeParticle(sp, Split2, event.t);
+		pnew[0] = factory.makeParticle(sp, Split1, event.t);
+		pnew[1] = factory.makeParticle(sp, Split2, event.t);
 
 		setNeighbors(pnew[0], event.p->prev, r);
 		setNeighbors(pnew[1], q, event.p->next);
-		factory->inactivate(p);
+		factory.inactivate(p);
 	}
 	else if (event.type == CollisionEvent) //colliding at two vertices
 	{
-		pnew[0] = factory->makeParticle(sp, Collide1, event.t);
-		pnew[1] = factory->makeParticle(sp, Collide2, event.t);
+		pnew[0] = factory.makeParticle(sp, Collide1, event.t);
+		pnew[1] = factory.makeParticle(sp, Collide2, event.t);
 		MovingParticle* x = (MovingParticle*)event.q;
 		MovingParticle* xn = x->next;
 		MovingParticle* xp = x->prev;
 		setNeighbors(pnew[0], event.p->prev, xn);
 		setNeighbors(pnew[1], xp, event.p->next);
-		factory->inactivate(p);
-		factory->inactivate(x);
+		factory.inactivate(p);
+		factory.inactivate(x);
 	}
 
 	for (int i = 0; i < 2; ++i)
@@ -667,7 +667,7 @@ MovingParticle::applyEvent()
 			pnew[i]->bUnstable = true;
 			MovingParticle* ptmp = pnew[i];
 			pnew[i] = traceAndHandleUnstable(pnew[i]);
-			factory->inactivate(ptmp);
+			factory.inactivate(ptmp);
 		}
 		updatePolygon(pnew[i]);
 	}
@@ -679,7 +679,7 @@ MovingParticle::applyEvent()
 MovingParticle*
 MovingParticle::traceAndHandleUnstable(MovingParticle* p)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
 	if (p->bActive == false)
 	{
@@ -694,29 +694,29 @@ MovingParticle::traceAndHandleUnstable(MovingParticle* p)
 	MovingParticle* q = NULL;
 	if (dp < dn)
 	{
-		q = factory->makeParticle(sfactory.makeParticle(p->prev->p), Split1, p->time);
+		q = factory.makeParticle(sfactory.makeParticle(p->prev->p), Split1, p->time);
 		q->setNeighbors(q, p->prev->prev, p->next);
 		q->parents[0] = p->parents[1];
 		q->parents[1] = p->parents[0];
-		factory->inactivate(p->prev);
+		factory.inactivate(p->prev);
 	}
 	else
 	{
-		q = factory->makeParticle(sfactory.makeParticle(p->next->p), Split2, p->time);
+		q = factory.makeParticle(sfactory.makeParticle(p->next->p), Split2, p->time);
 		q->setNeighbors(q, p->prev, p->next->next);
 		q->parents[0] = p->parents[1];
 		q->parents[1] = p->parents[0];
-		factory->inactivate(p->next);
+		factory.inactivate(p->next);
 	}
 
 	if (q->calculateVelocityR() == false)
 	{
-		MovingParticle* pnew = factory->makeParticle(sfactory.makeParticle(q->p), Axis, q->time);
+		MovingParticle* pnew = factory.makeParticle(sfactory.makeParticle(q->p), Axis, q->time);
 		pnew->children[0] = p;
 		pnew->children[1] = q;
 		MovingParticle* q2 = traceAndHandleUnstable(q);
-		factory->inactivate(q);
-		factory->inactivate(pnew);
+		factory.inactivate(q);
+		factory.inactivate(pnew);
 		return q2;
 	}
 	else {
@@ -766,13 +766,13 @@ MovingParticle::removeUnstable()
 void
 MovingParticle::quickFinish()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
 	set<MovingParticle*> pset;
 	while (true)
 	{
 		bool bdone = true;
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			MovingParticle* p = *it;
 			if (pset.find(p) == pset.end())
@@ -791,22 +791,22 @@ MovingParticle::quickFinish()
 						x.m_Y += vp[i]->p.m_Y/3;
 					}
 					MovingParticle* pnew[2];
-					pnew[0] = factory->makeParticle(sfactory.makeParticle(x), Dummy, vp[0]->time);
-					pnew[1] = factory->makeParticle(sfactory.makeParticle(x), Axis, vp[0]->time);
+					pnew[0] = factory.makeParticle(sfactory.makeParticle(x), Dummy, vp[0]->time);
+					pnew[1] = factory.makeParticle(sfactory.makeParticle(x), Axis, vp[0]->time);
 					pnew[0]->children[0] = vp[0];
 					pnew[0]->children[1] = vp[1];
 					pnew[1]->children[0] = vp[2];
 					pnew[1]->children[1] = pnew[0];
 					for (int i = 0; i < 2; ++i)
 					{
-						factory->inactivate(pnew[i]);
+						factory.inactivate(pnew[i]);
 					}
 				}
 				if (vp.size() <= 3)
 				{
 					for (int i = 0; i < vp.size(); ++i)
 					{
-						factory->inactivate(vp[i]);
+						factory.inactivate(vp[i]);
 					}
 				}
 				bdone = false;
@@ -844,7 +844,7 @@ MovingParticle::findIntersection(MovingParticle* p, MovingParticle* q)
 bool 
 MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<float, float> param)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
 	float time = p->time;
 	if (param.first > 0.0f && param.first<1.0f && param.second>0.0f && param.second < 1.0f)
@@ -854,13 +854,13 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 			MovingParticle* p2 = p->next;
 			float t = param.first;
 			CParticleF p0(p->p.m_X*(1.0 - t) + p2->p.m_X*t, p->p.m_Y*(1.0 - t) + p2->p.m_Y*t);
-			MovingParticle* y = factory->makeParticle(sfactory.makeParticle(p0), Collide1, time);
+			MovingParticle* y = factory.makeParticle(sfactory.makeParticle(p0), Collide1, time);
 			setNeighbors(y, p, q->next);
 			y->calculateVelocityR();
 			y->parents[0] = p2; //TK?
 			y->parents[1] = q;  //TK?
-			factory->inactivate(p2);
-			factory->inactivate(q);
+			factory.inactivate(p2);
+			factory.inactivate(q);
 			vector<MovingParticle*> vp1 = vectorize(y);
 		}
 		else //split
@@ -894,15 +894,15 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 				float t = isec[k].second;
 				MovingParticle* x = isec[k].first;
 				CParticleF p0(x->p.m_X*(1.0 - t) + x->next->p.m_X*t, x->p.m_Y*(1.0 - t) + x->next->p.m_Y*t);
-				pnew[k] = factory->makeParticle(sfactory.makeParticle(p0), Split1, time);
+				pnew[k] = factory.makeParticle(sfactory.makeParticle(p0), Split1, time);
 			}
 
 			//inactivate some before changing the neighborhood configuration
-			factory->inactivate(rs[1]);
+			factory.inactivate(rs[1]);
 			MovingParticle* tmp = isec[1].first;
 			while (tmp != isec[0].first)
 			{
-				factory->inactivate(tmp->next);
+				factory.inactivate(tmp->next);
 				tmp = tmp->next;
 			}
 			//set neighborhoods, velocity and parents.
@@ -924,19 +924,19 @@ MovingParticle::correctOvershoot(MovingParticle* p, MovingParticle* q, pair<floa
 bool
 MovingParticle::sanityCheck()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	while (true)
 	{
 		bool bdone = true;
-		for (int i = 0; i < factory->particles.size() && bdone; ++i)
+		for (int i = 0; i < factory.particles.size() && bdone; ++i)
 		{
-			MovingParticle* p = factory->particles[i];
+			MovingParticle* p = factory.particles[i];
 			if (p->isActive() == false) continue;
 			MovingParticle* p2 = p->next;
 
-			for (int j = 0; j < factory->particles.size(); ++j)
+			for (int j = 0; j < factory.particles.size(); ++j)
 			{
-				MovingParticle* q = factory->particles[j];
+				MovingParticle* q = factory.particles[j];
 				if (q->isActive() == false) continue;
 				MovingParticle* q2 = q->next;
 				if (p2 == q || q2 == p) continue;
@@ -967,13 +967,13 @@ MovingParticle::sanityCheck()
 vector<vector<MovingParticle*>> 
 MovingParticle::clusterParticles()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<vector<MovingParticle*>> clusters;
 	set<MovingParticle*> pset;
 	while (true)
 	{
 		bool bdone = true;
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			MovingParticle* p = *it;
 			if (pset.find(p) == pset.end())

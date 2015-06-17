@@ -175,13 +175,15 @@ private:
 
 struct ParticleFactory
 {
-	static ParticleFactory* getInstance()
+	static ParticleFactory& getInstance()
 	{
+		static ParticleFactory* _instance = NULL;
 		if (_instance == NULL)
 		{
 			_instance = new ParticleFactory();
 		}
-		return _instance;
+		return *_instance;
+
 	}
 	MovingParticle* makeParticle(StationaryParticle* p, MovingParticleType type, float tm)
 	{
@@ -253,19 +255,24 @@ struct ParticleFactory
 		}
 		return p;
 	}
-	~ParticleFactory()
-	{
-		clean();
-	}
 	vector<MovingParticle*> particles;
 	set<MovingParticle*> activeSet;
 	map<int, MovingParticle*> pmap;
 	set<MovingParticle*> updateQueue;
 private:
-	static ParticleFactory* _instance;
 	ParticleFactory()
 	{
 		MovingParticle::_id = 0;
+	}
+	ParticleFactory(ParticleFactory& f)
+	{
+	}
+	ParticleFactory operator=(ParticleFactory& f)
+	{
+	}
+	~ParticleFactory()
+	{
+		clean();
 	}
 };
 

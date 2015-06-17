@@ -8,13 +8,14 @@ template <class T>
 class GraphFactory
 {
 public:
-	static GraphFactory* GetInstance()
+	static GraphFactory& GetInstance()
 	{
-		if(_instance == 0)
+		static GraphFactory* _instance = NULL;
+		if (_instance == NULL)
 		{
 			_instance = new GraphFactory();
 		}
-		return _instance;
+		return *_instance;
 	}
 	Vertex<T>* makeVertex(T key)
 	{
@@ -83,15 +84,18 @@ public:
 	}
 	std::vector<Vertex<T>*> vertices;
 	std::vector<Edge<T>*> edges;
-protected:
+private:
 	GraphFactory() {};
 	~GraphFactory()
 	{
 		Clean();
 	}
-
-private:
-	static GraphFactory* _instance;
+	GraphFactory(GraphFactory& f)
+	{
+	}
+	GraphFactory operator=(GraphFactory& f)
+	{
+	}
 };
 
 #endif /*  ___GRAPH_FACTORY_H___ */

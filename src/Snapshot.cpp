@@ -5,13 +5,13 @@
 vector<Snapshot>
 Snapshot::TakeSnapshot(float time)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<Snapshot> polygons;
 	set<MovingParticle*> pset;
 	while (true)
 	{
 		bool bdone = true;
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			MovingParticle* p = *it;
 			if (pset.find(p) == pset.end())
@@ -70,7 +70,7 @@ Snapshot::LoadSnapshot(const mxArray* ptr)
 mxArray*
 Snapshot::StoreSnapshot(Snapshot& snapshot)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<CParticleF> shape = snapshot.polygon->project(snapshot.getProjectionTime());
 	const int dims[] = { shape.size(), 4 };
 	vector<float> F(dims[0] * dims[1]);

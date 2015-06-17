@@ -8,12 +8,12 @@ PolygonDAG::PolygonDAG()
 void 
 PolygonDAG::add(Polygon* u, Polygon* v)
 {
-	GraphFactory<Polygon*>* factory = GraphFactory<Polygon*>::GetInstance();
+	GraphFactory<Polygon*>& factory = GraphFactory<Polygon*>::GetInstance();
 	Vertex<Polygon*>* from = NULL;
 	Vertex<Polygon*>* to = NULL;
 	if (pmap.find(u) == pmap.end())
 	{
-		from = factory->makeVertex(u);
+		from = factory.makeVertex(u);
 		pmap[u] = from;
 		vertices.push_back(from);
 	}
@@ -23,7 +23,7 @@ PolygonDAG::add(Polygon* u, Polygon* v)
 	}
 	if (pmap.find(v) == pmap.end())
 	{
-		to = factory->makeVertex(v);
+		to = factory.makeVertex(v);
 		pmap[v] = to;
 		vertices.push_back(to);
 	}
@@ -42,7 +42,7 @@ PolygonDAG::add(Polygon* u, Polygon* v)
 	}
 	if (bfound == false)
 	{
-		Edge<Polygon*>* edge = factory->makeEdge(from, to);
+		Edge<Polygon*>* edge = factory.makeEdge(from, to);
 		from->aList.push_back(edge);
 		edges.push_back(edge);
 		bSorted = false;

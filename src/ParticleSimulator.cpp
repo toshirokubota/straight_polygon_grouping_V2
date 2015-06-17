@@ -10,11 +10,11 @@
 bool
 ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	PolygonFactory& pfactory = PolygonFactory::getInstance();
 	float snapTime = delta;
 	bool bSuccess = true;
-	for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+	for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 	{
 		(*it)->updateEvent();
 	}
@@ -32,7 +32,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		if (p->id == 232)
 			iter += 0;
 
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			(*it)->update(p->getEvent().t - time);
 		}
@@ -116,11 +116,11 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 
 		doneEvents.push_back(p->getEvent());
 		//for (set<MovingParticle*>::iterator it = factory->updateQueue.begin(); it != factory->updateQueue.end(); ++it)
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			(*it)->updateEvent();
 		}
-		factory->updateQueue.clear();
+		factory.updateQueue.clear();
 	}
 
 	return bSuccess;
@@ -168,14 +168,14 @@ _trace(Edge<StationaryParticle*>* edge)
 vector<MovingParticle*>
 ParticleSimulator::initializePolygon(vector<Edge<StationaryParticle*>*>& edges)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<MovingParticle*> particles;
 	for (int i = 0; i < edges.size(); ++i)
 	{
-		particles.push_back(factory->makeParticle(edges[i]->u->key, Initial, 0.0f));
+		particles.push_back(factory.makeParticle(edges[i]->u->key, Initial, 0.0f));
 		if (edges[i]->u->aList.size() <= 1) //leaf node.
 		{
-			particles.push_back(factory->makeParticle(edges[i]->u->key, Initial, 0.0f));
+			particles.push_back(factory.makeParticle(edges[i]->u->key, Initial, 0.0f));
 		}
 	}
 	//set the neighborhood
@@ -237,20 +237,20 @@ traceForrest(vector<Vertex<StationaryParticle*>*>& forrest, vector<Edge<Stationa
 bool
 ParticleSimulator::Prepare(vector<StationaryParticle*>& points, vector<pair<int, int>>& E, float delta0)
 {
-	GraphFactory<StationaryParticle*>* factory = GraphFactory<StationaryParticle*>::GetInstance();
-	ParticleFactory* pfactory = ParticleFactory::getInstance();
+	GraphFactory<StationaryParticle*>& factory = GraphFactory<StationaryParticle*>::GetInstance();
+	ParticleFactory& pfactory = ParticleFactory::getInstance();
 
 	vector<Vertex<StationaryParticle*>*> vertices;
 	for (int i = 0; i < points.size(); ++i)
 	{
-		vertices.push_back(factory->makeVertex(points[i]));
+		vertices.push_back(factory.makeVertex(points[i]));
 	}
 	vector<Edge<StationaryParticle*>*> edges;
 	for (int i = 0; i < E.size(); ++i)
 	{
 		pair<int, int> idx = E[i];
-		Edge<StationaryParticle*>* edge = factory->makeEdge(vertices[idx.first], vertices[idx.second], 1.0f);
-		Edge<StationaryParticle*>* edge2 = factory->makeEdge(vertices[idx.second], vertices[idx.first], 1.0f);
+		Edge<StationaryParticle*>* edge = factory.makeEdge(vertices[idx.first], vertices[idx.second], 1.0f);
+		Edge<StationaryParticle*>* edge2 = factory.makeEdge(vertices[idx.second], vertices[idx.first], 1.0f);
 		vertices[idx.first]->Add(edge);
 		vertices[idx.second]->Add(edge2);
 		edges.push_back(edge);
@@ -260,7 +260,7 @@ ParticleSimulator::Prepare(vector<StationaryParticle*>& points, vector<pair<int,
 	traceForrest(vertices, edges);
 
 	time = 0.0f;
-	for (set<MovingParticle*>::iterator it = pfactory->activeSet.begin(); it != pfactory->activeSet.end(); ++it)
+	for (set<MovingParticle*>::iterator it = pfactory.activeSet.begin(); it != pfactory.activeSet.end(); ++it)
 	{
 		(*it)->update(delta0);
 	}
@@ -273,12 +273,12 @@ ParticleSimulator::Prepare(vector<StationaryParticle*>& points, vector<pair<int,
 mxArray*
 ParticleSimulator::SaveParticles()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
-	const int dims[] = { factory->particles.size(), ParticleDumpSize };
+	ParticleFactory& factory = ParticleFactory::getInstance();
+	const int dims[] = { factory.particles.size(), ParticleDumpSize };
 	vector<float> F(dims[0] * dims[1]);
 	for (int i = 0; i < dims[0]; ++i)
 	{
-		MovingParticle* p = factory->particles[i];
+		MovingParticle* p = factory.particles[i];
 		vector<float> v = p->dump2vector();
 		for (int j = 0; j < dims[1]; ++j)
 		{
@@ -310,9 +310,8 @@ ParticleSimulator::SaveDoneEvents()
 bool
 ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
-	factory->clean();
 	this->time = 0.0f;
 	map<int, MovingParticle*> id2particle;
 	vector<int> vchild1;
@@ -349,7 +348,7 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		int eq = (int)GetData2(F, i, 21, dims[0], dims[1], -1.0f);
 		int er = (int)GetData2(F, i, 22, dims[0], dims[1], -1.0f);
 		float etime = GetData2(F, i, 23, dims[0], dims[1], 0.0f);
-		MovingParticle* p = factory->makeParticle(sfactory.makeParticle(CParticleF(x0, y0)), type, created);
+		MovingParticle* p = factory.makeParticle(sfactory.makeParticle(CParticleF(x0, y0)), type, created);
 		p->p.m_X = x;
 		p->p.m_Y = y;
 		p->v[0] = vx;
@@ -373,7 +372,7 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		id2particle[p->id] = p;
 		if (p->bActive==false)
 		{
-			factory->inactivate(p);
+			factory.inactivate(p);
 		}
 		if (p->time > this->time)
 		{
@@ -381,9 +380,9 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		}
 	}
 	//now  set prev, next, etc.
-	for (int i = 0; i < factory->particles.size(); ++i)
+	for (int i = 0; i < factory.particles.size(); ++i)
 	{
-		MovingParticle* p = factory->particles[i];
+		MovingParticle* p = factory.particles[i];
 		p->prev = vprev[i] >= 0 ? id2particle[vprev[i]] : NULL;
 		p->next = vnext[i] >= 0 ? id2particle[vnext[i]] : NULL;
 		p->event.q = veq[i] >= 0 ? id2particle[veq[i]] : NULL;
@@ -404,12 +403,12 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 mxArray*
 ParticleSimulator::SaveConvexity()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
-	const int dims[] = { factory->particles.size(), 3 };
+	ParticleFactory& factory = ParticleFactory::getInstance();
+	const int dims[] = { factory.particles.size(), 3 };
 	vector<float> F(dims[0] * dims[1]);
 	for (int i = 0; i < dims[0]; ++i)
 	{
-		MovingParticle* p = factory->particles[i];
+		MovingParticle* p = factory.particles[i];
 		CParticleF pr = p->project(p->created + 0.1);
 		SetData2(F, i, 0, dims[0], dims[1], pr.m_X);
 		SetData2(F, i, 1, dims[0], dims[1], pr.m_Y);

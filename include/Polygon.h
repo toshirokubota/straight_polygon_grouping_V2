@@ -4,6 +4,7 @@
 #include <set>
 using namespace std;
 
+class StationaryParticle;
 class MovingParticle;
 class PolygonFactory;
 
@@ -15,7 +16,7 @@ public:
 	bool operator==(const Polygon& poly) const
 	{
 		if (poly.particles.size() != particles.size()) return false;
-		return pset == poly.pset;
+		return sset == poly.sset;
 	}
 
 	int getId() const { return id; }
@@ -23,20 +24,10 @@ public:
 	vector<MovingParticle*> getParticles() const { return particles; }
 
 private:
-	Polygon(vector<MovingParticle*>& vp, float creation_time)
-	{
-		static int _id = 0;
-		this->particles = vp;
-		this->creation_time = creation_time;
-		id = _id++;
-		level = 0;
-		for (int i = 0; i < vp.size(); ++i)
-		{
-			pset.insert(vp[i]);
-		}
-	}
+	Polygon(vector<MovingParticle*>& vp, float creation_time);
 	vector<MovingParticle*> particles;
-	set<MovingParticle*> pset;
+	//set<MovingParticle*> pset;
+	set<StationaryParticle*> sset;
 	float creation_time;
 	int level;
 	int id;

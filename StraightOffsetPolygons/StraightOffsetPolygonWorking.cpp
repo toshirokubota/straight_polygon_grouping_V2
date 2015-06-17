@@ -28,10 +28,6 @@ using namespace std;
 #include <MovingParticle.h>
 #include <ParticleSimulator.h>
 
-GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
-GraphFactory<Polygon*>* GraphFactory<Polygon*>::_instance = NULL;
-ParticleFactory* ParticleFactory::_instance = NULL;
-
 int MovingParticle::_id = 0;
 
 mxArray*
@@ -171,7 +167,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		//plhs[3] = simulator.SaveDoneEvents();
 	}
 
-	ParticleFactory::getInstance()->clean();
 	mexUnlock();
 }
 

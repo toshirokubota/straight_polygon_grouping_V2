@@ -11,3 +11,20 @@ Polygon::project(float time)
 	}
 	return c;
 }
+
+Polygon::Polygon(vector<MovingParticle*>& vp, float creation_time)
+{
+	static int _id = 0;
+	this->particles = vp;
+	this->creation_time = creation_time;
+	id = _id++;
+	level = 0;
+	for (int i = 0; i < vp.size(); ++i)
+	{
+		//pset.insert(vp[i]);
+	}
+	for (int i = 0; i < vp.size(); ++i)
+	{
+		sset.insert(vp[i]->getInitParticle());
+	}
+}
