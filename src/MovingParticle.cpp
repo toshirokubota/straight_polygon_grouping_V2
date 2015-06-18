@@ -429,13 +429,13 @@ MovingParticle::_setParents(EventStruct cause)
 	{
 		if (this->type == Collide1)
 		{
-			this->parents[0] = qe;
-			this->parents[1] = pe;
+			this->parents[0] = pe;
+			this->parents[1] = qe;
 		}
 		else if (this->type == Collide2)
 		{
-			this->parents[0] = pe;
-			this->parents[1] = qe;
+			this->parents[0] = qe;
+			this->parents[1] = pe;
 		}
 	}
 }
@@ -696,16 +696,16 @@ MovingParticle::traceAndHandleUnstable(MovingParticle* p)
 	{
 		q = factory.makeParticle(sfactory.makeParticle(p->prev->p), Split1, p->time);
 		q->setNeighbors(q, p->prev->prev, p->next);
-		q->parents[0] = p->parents[1];
-		q->parents[1] = p->parents[0];
+		q->parents[0] = p->parents[0];
+		q->parents[1] = p->parents[1];
 		factory.inactivate(p->prev);
 	}
 	else
 	{
 		q = factory.makeParticle(sfactory.makeParticle(p->next->p), Split2, p->time);
 		q->setNeighbors(q, p->prev, p->next->next);
-		q->parents[0] = p->parents[1];
-		q->parents[1] = p->parents[0];
+		q->parents[0] = p->parents[0];
+		q->parents[1] = p->parents[1];
 		factory.inactivate(p->next);
 	}
 

@@ -14,7 +14,6 @@ Polygon::project(float time)
 
 Polygon::Polygon(vector<MovingParticle*>& vp, float creation_time)
 {
-	static int _id = 0;
 	this->particles = vp;
 	this->creation_time = creation_time;
 	id = _id++;

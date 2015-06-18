@@ -29,6 +29,7 @@ using namespace std;
 #include <ParticleSimulator.h>
 
 int MovingParticle::_id = 0;
+int Polygon::_id = 0;
 
 mxArray*
 StoreContours(const vector<vector<CParticleF>>& polygons)
@@ -167,6 +168,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		//plhs[3] = simulator.SaveDoneEvents();
 	}
 
+	ParticleFactory::getInstance().clean();
+	PolygonFactory::getInstance().clean();
 	mexUnlock();
 }
 

@@ -31,6 +31,7 @@ private:
 	float creation_time;
 	int level;
 	int id;
+	static int _id;
 };
 
 
@@ -53,17 +54,24 @@ public:
 		polygons.push_back(p);
 		return p;
 	}
-
-private:
-	PolygonFactory()
-	{
-	}
-	~PolygonFactory()
+	void clean()
 	{
 		for (int i = 0; i < polygons.size(); ++i)
 		{
 			delete polygons[i];
 		}
+		polygons.clear();
+		Polygon::_id = 0;
+	}
+
+private:
+	PolygonFactory()
+	{
+		Polygon::_id = 0;
+	}
+	~PolygonFactory()
+	{
+		clean();
 	}
 	PolygonFactory(PolygonFactory& f)
 	{

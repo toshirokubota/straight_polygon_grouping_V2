@@ -77,26 +77,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		{
 			vector<MovingParticle*> tr = MovingParticle::traceBackPolygon(regions[i]);
 			vector<vector<MovingParticle*>> areas = MovingParticle::closedRegions(tr);
-			/*if (time > 0.499 && time < 0.501)
-			{
-				printf("iter=%d, trace=%d\n", iter, i + 1);
-				for (int j = 0; j < regions[i].size(); ++j)
-				{
-					printf("%d %3.3f %3.3f %3.3f %3.3f %d\n", 
-						regions[i][j]->id, regions[i][j]->p0.m_X, regions[i][j]->p0.m_Y, regions[i][j]->p.m_X, regions[i][j]->p.m_Y, regions[i][j]->type);
-				}
-				for (int j = 0; j < tr.size(); ++j)
-				{
-					printf("\t%d %3.3f %3.3f %d\n", tr[j]->id, tr[j]->p0.m_X, tr[j]->p0.m_Y, tr[j]->type);
-				}
-				for (int j = 0; j < areas.size(); ++j)
-				{
-					for (int k = 0; k < areas[j].size(); ++k)
-					{
-						printf("\t\t%d %3.3f %3.3f %d\n", areas[j][k]->id, areas[j][k]->p0.m_X, areas[j][k]->p0.m_Y, areas[j][k]->type);
-					}
-				}
-			}*/
+			//if (time > 0.499 && time < 0.501)
 			for (int j = 0; j < areas.size(); ++j)
 			{
 				Snapshot shot(time, 0.0f, areas[j]);
@@ -104,6 +85,26 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 				{
 					closedRegions.push_back(shot);
 					Polygon* poly = pfactory.makePolygon(areas[j], time);
+					if (closedRegions.size() > 4)
+					{
+						printf("iter=%d, trace=%d\n", iter, i + 1);
+						for (int j = 0; j < regions[i].size(); ++j)
+						{
+							printf("%d %3.3f %3.3f %3.3f %3.3f %d\n",
+								regions[i][j]->id, regions[i][j]->p0.m_X, regions[i][j]->p0.m_Y, regions[i][j]->p.m_X, regions[i][j]->p.m_Y, regions[i][j]->type);
+						}
+						for (int j = 0; j < tr.size(); ++j)
+						{
+							printf("\t%d %3.3f %3.3f %d\n", tr[j]->id, tr[j]->p0.m_X, tr[j]->p0.m_Y, tr[j]->type);
+						}
+						for (int j = 0; j < areas.size(); ++j)
+						{
+							for (int k = 0; k < areas[j].size(); ++k)
+							{
+								printf("\t\t%d %3.3f %3.3f %d\n", areas[j][k]->id, areas[j][k]->p0.m_X, areas[j][k]->p0.m_Y, areas[j][k]->type);
+							}
+						}
+					}
 				}
 			}
 			Snapshot shot(time, 0.0f, tr);
@@ -122,7 +123,10 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		}
 		factory.updateQueue.clear();
 	}
-
+	for (int i = 0; i < factory.particles.size(); ++i)
+	{
+		factory.particles[i]->printParentTree("\t");
+	}
 	return bSuccess;
 }
 
