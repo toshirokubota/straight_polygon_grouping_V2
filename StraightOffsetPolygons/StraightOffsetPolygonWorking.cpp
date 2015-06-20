@@ -142,10 +142,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 3)
 	{
-		plhs[2] = Snapshot::StoreSnapshots(simulator.closedRegions);
+		plhs[2] = Snapshot::StoreSnapshots0(simulator.closedRegions);
 	}
 	if (nlhs >= 4)
 	{
+		//plhs[3] = Snapshot::StoreSnapshots0(simulator.closedRegions);
 		plhs[3] = Snapshot::StoreSnapshots(simulator.polygons);
 		//plhs[3] = simulator.SaveDoneEvents();
 	}

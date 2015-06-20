@@ -31,42 +31,6 @@ Snapshot::TakeSnapshot(float time)
 	return polygons;
 }
 
-/*Snapshot
-Snapshot::LoadSnapshot(const mxArray* ptr)
-{
-	ParticleFactory* factory = ParticleFactory::getInstance();
-	vector<float> F;
-	mxClassID classId;
-	int ndim;
-	const int* dims;
-	LoadData(F, ptr, classId, ndim, &dims);
-	if (F.size()<4)
-	{
-		return Snapshot();
-	}
-	else
-	{
-		Snapshot shot(-1.0f);
-		for (int i = 0; i < dims[0]; ++i)
-		{
-			float x = GetData2(F, i, 0, dims[0], dims[1], 0.0f);
-			float y = GetData2(F, i, 1, dims[0], dims[1], 0.0f);
-			float t = GetData2(F, i, 2, dims[0], dims[1], 0.0f);
-			int id = (int)GetData2(F, i, 3, dims[0], dims[1], -1.0f);
-			if (shot.created_time < 0)
-			{
-				shot.created_time = t;
-			}
-			else if (t != shot.created_time)
-			{
-				mexErrMsgTxt("LoadSnapshot: Inconsistent time stamps are found.");
-			}
-			shot.add(id);
-		}
-		return shot;
-	}
-}*/
-
 mxArray*
 Snapshot::StoreSnapshot(Snapshot& snapshot)
 {
@@ -84,19 +48,24 @@ Snapshot::StoreSnapshot(Snapshot& snapshot)
 	return StoreData(F, mxSINGLE_CLASS, 2, dims);
 }
 
-/*vector<Snapshot>
-Snapshot::LoadSnapshots(const mxArray* ptr)
+/*
+Store stationary particles.
+*/
+mxArray*
+Snapshot::StoreSnapshot0(Snapshot& snapshot)
 {
-	int n = mxGetNumberOfElements(ptr);
-	vector<Snapshot> snapshots(n);
-	for (int i = 0; i < n; ++i)
+	ParticleFactory& factory = ParticleFactory::getInstance();
+	vector<MovingParticle*> vp = snapshot.polygon->getParticles();
+	const int dims[] = { vp.size(), 3 };
+	vector<float> F(dims[0] * dims[1]);
+	for (int j = 0; j < dims[0]; ++j)
 	{
-		mxArray* cell = mxGetCell(ptr, i);
-		snapshots[i] = LoadSnapshot(cell);
+		SetData2(F, j, 0, dims[0], dims[1], vp[j]->getInitParticle()->getX());
+		SetData2(F, j, 1, dims[0], dims[1], vp[j]->getInitParticle()->getY());
+		SetData2(F, j, 2, dims[0], dims[1], (float)vp[j]->getInitParticle()->getId());
 	}
-	return snapshots;
-}*/
-
+	return StoreData(F, mxSINGLE_CLASS, 2, dims);
+}
 
 mxArray*
 Snapshot::StoreSnapshots(vector<Snapshot>& snapshots)
@@ -107,6 +76,20 @@ Snapshot::StoreSnapshots(vector<Snapshot>& snapshots)
 	for (int i = 0; i<snapshots.size(); ++i)
 	{
 		mxArray* a = StoreSnapshot(snapshots[i]);
+		mxSetCell(plhs, i, a);
+	}
+	return plhs;
+}
+
+mxArray*
+Snapshot::StoreSnapshots0(vector<Snapshot>& snapshots)
+{
+	mxArray* plhs;
+	const int dims[] = { snapshots.size(), 1 };
+	plhs = mxCreateCellArray((mwSize)2, (const mwSize*)dims);
+	for (int i = 0; i<snapshots.size(); ++i)
+	{
+		mxArray* a = StoreSnapshot0(snapshots[i]);
 		mxSetCell(plhs, i, a);
 	}
 	return plhs;

@@ -1,4 +1,4 @@
-#include <EventStruct.h>
+//#include <EventStruct.h>
 #include <MovingParticle.h>
 #include <mex.h>
 
@@ -48,29 +48,21 @@ void EventStruct::print()
 	{
 		CParticleF qp = q->getP();
 		CParticleF rp = r->getP();
-		MovingParticle* c1 = p->getChildren(0);
-		MovingParticle* c2 = p->getChildren(1);
-		printf("event>> Split @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f), %d(%3.3f,%3.3f) => %d, %d\n",
-			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y, r->getId(), rp.m_X, rp.m_Y,
-			c1==NULL ? -1: c1->getId(), c2==NULL ? -1: c2->getId());
+		printf("event>> Split @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f), %d(%3.3f,%3.3f)\n",
+			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y, r->getId(), rp.m_X, rp.m_Y);
 	}
 	else if (type == EdgeEvent)
 	{
 		CParticleF qp = q->getP();
-		MovingParticle* c1 = p->getChildren(0);
-		printf("event>> Edge @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f) => %d\n",
-			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y,
-			c1==NULL ? -1: c1->getId());
+		printf("event>> Edge @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f)\n",
+			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y);
 	}
 	else if (type == CollisionEvent)
 	{
 		CParticleF qp = q->getP();
 		CParticleF rp = r->getP();
-		MovingParticle* c1 = p->getChildren(0);
-		MovingParticle* c2 = p->getChildren(1);
-		printf("event>> Collision @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f), %d(%3.3f,%3.3f) => %d, %d\n",
-			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y, r->getId(), rp.m_X, rp.m_Y,
-			c1 == NULL ? -1 : c1->getId(), c2 == NULL ? -1 : c2->getId());
+		printf("event>> Collision @ %f: %d(%3.3f,%3.3f)->%d(%3.3f,%3.3f), %d(%3.3f,%3.3f)\n",
+			t, p->getId(), pp.m_X, pp.m_Y, q->getId(), qp.m_X, qp.m_Y, r->getId(), rp.m_X, rp.m_Y);
 	}
 	else
 	{

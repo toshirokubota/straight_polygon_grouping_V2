@@ -21,6 +21,8 @@ public:
 	//static vector<Snapshot> LoadSnapshots(const mxArray* ptr);
 	static mxArray* StoreSnapshot(Snapshot& snapshot);
 	static mxArray* StoreSnapshots(vector<Snapshot>& snapshot);
+	static mxArray* StoreSnapshot0(Snapshot& snapshot);
+	static mxArray* StoreSnapshots0(vector<Snapshot>& snapshot);
 	float getProjectionTime() const { return projection_time; }
 	float getCreationTime() const { return created_time; }
 	bool operator==(const Snapshot& shot) const

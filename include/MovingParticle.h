@@ -12,14 +12,14 @@ using namespace std;
 #include <MovingFront.h>
 #include <StationaryParticle.h>
 
-enum MovingParticleType { Unknown, Initial, Regular, Merge, Split1, Split2, Collide1, Collide2, Axis, Dummy };
+enum MovingParticleType { Unknown, Initial, Regular, Merge, Split, Collide, Axis, Dummy };
 struct ParticleFactory;
 class ParticleSimulator;
 class OffsetPolygonDAGBuilder;
 class Polygon;
 
 MovingParticleType int2ParticleType(int i);
-const int ParticleDumpSize = 23;
+const int ParticleDumpSize = 27;
 
 class MovingParticle
 {
@@ -52,12 +52,12 @@ public:
 	float getTime() const { return time; }
 	float getCreatedTime() const { return created; }
 	MovingParticleType getType() const { return type; }
-	MovingParticle* getChildren(int j) const
+	/*MovingParticle* getChildren(int j) const
 	{
 		if (j == 0) return this->children[0];
 		else if (j == 1) return this->children[1];
 		else return NULL;
-	}
+	}*/
 	MovingParticle* getParent(int j) const
 	{
 		if (j == 0) return this->parents[0];
@@ -112,7 +112,7 @@ public:
 	static vector<vector<MovingParticle*>> closedRegions(vector<MovingParticle*>& points);
 	static pair<MovingParticle*, float> findIntersection(MovingParticle* p, MovingParticle* q);
 	static float intersectSideAndLine(const MovingParticle* p, const MovingParticle* q, const MovingParticle* r);
-	static MovingParticle* traceAndHandleUnstable(MovingParticle* p);
+	static MovingParticle* traceAndHandleUnstable(MovingParticle* p, MovingParticle* parent);
 	static bool correctOvershoot(MovingParticle* p, MovingParticle* q, pair<float, float> param);
 
 private:
@@ -125,7 +125,7 @@ private:
 		next = NULL;
 		prev = NULL;
 		parents[0] = parents[1] = NULL;
-		children[0] = children[1] = NULL;
+		//children[0] = children[1] = NULL;
 		id = _id++;
 		type = t;
 		created = tm;
@@ -143,7 +143,7 @@ private:
 
 	float MovingParticle::_splitTime(const MovingParticle* q, const MovingParticle* r, float eps = 1.0e-3) const;
 	bool _onSideAt(const MovingParticle* q, float t, float eps = 1.0e-3) const;
-	void _setParents(EventStruct cause);
+	void _setParents(EventStruct cause, bool bSide);
 	bool calculateVelocityR();
 
 	StationaryParticle* init_particle;
@@ -152,7 +152,7 @@ private:
 	MovingParticle* next;
 	MovingParticle* prev;
 	MovingParticle* parents[2];
-	MovingParticle* children[2];
+	//MovingParticle* children[2];
 	MovingFront rear;
 	MovingFront front;
 
@@ -191,7 +191,7 @@ struct ParticleFactory
 		particles.push_back(particle);
 		activeSet.insert(particle);
 		pmap[particle->id] = particle;
-		if (particle->id == 703)
+		if (particle->id == 66)
 		{
 			particle->id += 0;
 		}

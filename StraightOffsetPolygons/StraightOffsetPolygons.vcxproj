@@ -203,6 +203,7 @@
     <ClInclude Include="..\include\Polygon.h" />
     <ClInclude Include="..\include\PolygonDAG.h" />
     <ClInclude Include="..\include\Snapshot.h" />
+    <ClInclude Include="..\include\StationaryParticle.h" />
     <ClInclude Include="..\include\szConvexHull2D.h" />
     <ClInclude Include="..\include\szMexUtility.h" />
     <ClInclude Include="..\include\szmexutilitytemplate.h" />

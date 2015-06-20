@@ -29,7 +29,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 		MovingParticle* p = MovingParticle::getNextEvent();
 		if (p == NULL) break;
 		if (p->getEvent().t > endtime) break;
-		if (p->id == 232)
+		if (p->id == 19 && p->event.q->id == 22)
 			iter += 0;
 
 		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
@@ -85,7 +85,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 				{
 					closedRegions.push_back(shot);
 					Polygon* poly = pfactory.makePolygon(areas[j], time);
-					if (closedRegions.size() > 4)
+					/*if (closedRegions.size() > 4)
 					{
 						printf("iter=%d, trace=%d\n", iter, i + 1);
 						for (int j = 0; j < regions[i].size(); ++j)
@@ -104,7 +104,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 								printf("\t\t%d %3.3f %3.3f %d\n", areas[j][k]->id, areas[j][k]->p0.m_X, areas[j][k]->p0.m_Y, areas[j][k]->type);
 							}
 						}
-					}
+					}*/
 				}
 			}
 			Snapshot shot(time, 0.0f, tr);
@@ -125,7 +125,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 	}
 	for (int i = 0; i < factory.particles.size(); ++i)
 	{
-		factory.particles[i]->printParentTree("\t");
+		//factory.particles[i]->printParentTree("\t");
 	}
 	return bSuccess;
 }
@@ -346,12 +346,16 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		bool bUnstable = (bool)GetData2(F, i, 15, dims[0], dims[1], 0.0f)>0.0f ? true : false;
 		int parent1 = (int)GetData2(F, i, 16, dims[0], dims[1], -1.0f);
 		int parent2 = (int)GetData2(F, i, 17, dims[0], dims[1], -1.0f);
-		int child1 = (int)GetData2(F, i, 18, dims[0], dims[1], -1.0f);
-		int child2 = (int)GetData2(F, i, 19, dims[0], dims[1], -1.0f);
-		EventType etype = int2EventType((int)GetData2(F, i, 20, dims[0], dims[1], 0.0f));
-		int eq = (int)GetData2(F, i, 21, dims[0], dims[1], -1.0f);
-		int er = (int)GetData2(F, i, 22, dims[0], dims[1], -1.0f);
-		float etime = GetData2(F, i, 23, dims[0], dims[1], 0.0f);
+		EventType etype = int2EventType((int)GetData2(F, i, 18, dims[0], dims[1], 0.0f));
+		int eq = (int)GetData2(F, i, 19, dims[0], dims[1], -1.0f);
+		int er = (int)GetData2(F, i, 20, dims[0], dims[1], -1.0f);
+		float etime = GetData2(F, i, 21, dims[0], dims[1], 0.0f);
+		float frontx = GetData2(F, i, 22, dims[0], dims[1], 0.0f);
+		float fronty = GetData2(F, i, 23, dims[0], dims[1], 0.0f);
+		float frontsp = GetData2(F, i, 24, dims[0], dims[1], 0.0f);
+		float rearx = GetData2(F, i, 22, dims[0], dims[1], 0.0f);
+		float reary = GetData2(F, i, 23, dims[0], dims[1], 0.0f);
+		float rearsp = GetData2(F, i, 24, dims[0], dims[1], 0.0f);
 		MovingParticle* p = factory.makeParticle(sfactory.makeParticle(CParticleF(x0, y0)), type, created);
 		p->p.m_X = x;
 		p->p.m_Y = y;
@@ -366,8 +370,6 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		p->reflexive = ref;
 		vparent1.push_back(parent1);
 		vparent2.push_back(parent2);
-		vchild1.push_back(child1);
-		vchild2.push_back(child2);
 		p->event.p = p;
 		vprev.push_back(pid);
 		vnext.push_back(nid);
@@ -382,6 +384,8 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		{
 			this->time = p->time;
 		}
+		p->front = MovingFront(ParticleDirection(frontx, fronty), frontsp);
+		p->rear = MovingFront(ParticleDirection(rearx, reary), rearsp);
 	}
 	//now  set prev, next, etc.
 	for (int i = 0; i < factory.particles.size(); ++i)
@@ -393,8 +397,6 @@ ParticleSimulator::LoadParticles(vector<float>& F, const int* dims)
 		p->event.r = ver[i] >= 0 ? id2particle[ver[i]] : NULL;
 		p->parents[0] = vparent1[i] >= 0 ? id2particle[vparent1[i]] : NULL;
 		p->parents[1] = vparent2[i] >= 0 ? id2particle[vparent2[i]] : NULL;
-		p->children[0] = vchild1[i] >= 0 ? id2particle[vchild1[i]] : NULL;
-		p->children[1] = vchild2[i] >= 0 ? id2particle[vchild2[i]] : NULL;
 		if (p->id >= MovingParticle::_id)
 		{
 			MovingParticle::_id = p->id + 1;

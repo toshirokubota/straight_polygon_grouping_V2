@@ -93,6 +93,9 @@
     <ClInclude Include="..\include\PolygonDAG.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\StationaryParticle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
