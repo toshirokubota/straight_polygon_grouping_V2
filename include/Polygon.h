@@ -13,6 +13,7 @@ class Polygon
 public:
 	friend PolygonFactory;
 	vector<CParticleF> project(float time);
+	vector<CParticleF> original(); //returns locations of initial particles.
 	bool operator==(const Polygon& poly) const
 	{
 		if (poly.particles.size() != particles.size()) return false;

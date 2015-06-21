@@ -78,8 +78,17 @@ representativePosition(const vector<CParticleF>& cluster);
 float
 areaTriangle(CParticleF& a, CParticleF& b, CParticleF& c);
 
+/*
+It returns true if a point P is STRICTLy INSIDE a polygon PNTS.
+*/
 bool
 inside(const CParticleF& p, const vector<CParticleF>& pnts);
+
+/*
+It returns true if a point P is INSIDE or ON a polygon PNTS.
+*/
+bool
+contained(const CParticleF& p, const vector<CParticleF>& pnts);
 
 /*
 compute the closest point from x on the line connecting p and q.

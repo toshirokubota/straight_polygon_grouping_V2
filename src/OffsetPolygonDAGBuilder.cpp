@@ -47,14 +47,14 @@ _trace(Edge<StationaryParticle*>* edge)
 vector<MovingParticle*>
 initializePolygon(vector<Edge<StationaryParticle*>*>& edges)
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<MovingParticle*> particles;
 	for (int i = 0; i < edges.size(); ++i)
 	{
-		particles.push_back(factory->makeParticle(edges[i]->u->key, Initial, 0.0f));
+		particles.push_back(factory.makeParticle(edges[i]->u->key, Initial, 0.0f));
 		if (edges[i]->u->aList.size() <= 1) //leaf node.
 		{
-			particles.push_back(factory->makeParticle(edges[i]->u->key, Initial, 0.0f));
+			particles.push_back(factory.makeParticle(edges[i]->u->key, Initial, 0.0f));
 		}
 	}
 	//set the neighborhood
@@ -111,8 +111,8 @@ traceForrest(vector<Edge<StationaryParticle*>*>& edges)
 bool
 OffsetPolygonDAGBuilder::Polygonify()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
-	factory->clean();
+	ParticleFactory& factory = ParticleFactory::getInstance();
+	factory.clean();
 
 	forrest = traceForrest(dag.edges);
 
@@ -142,7 +142,7 @@ bool
 OffsetPolygonDAGBuilder::Expand(float endtime)
 {
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
-	ParticleFactory* pfactory = ParticleFactory::getInstance();
+	ParticleFactory& pfactory = ParticleFactory::getInstance();
 	float time = 0;
 	float cutoff = 0.5;
 	while (time <= endtime)
@@ -171,7 +171,7 @@ OffsetPolygonDAGBuilder::Expand(float endtime)
 			aMap[q->getInitParticle()] = false;
 		}
 		time = p->event.t;
-		pfactory->inactivate(p);
+		pfactory.inactivate(p);
 		
 	}
 	return true;

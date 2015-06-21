@@ -13,8 +13,8 @@ SkeletonDAG::add(StationaryParticle* p)
 	}
 	else
 	{
-		GraphFactory<StationaryParticle*>* factory = GraphFactory<StationaryParticle*>::GetInstance();
-		vertices.push_back(factory->makeVertex(p));
+		GraphFactory<StationaryParticle*>& factory = GraphFactory<StationaryParticle*>::GetInstance();
+		vertices.push_back(factory.makeVertex(p));
 		return true;
 	}
 }
@@ -28,10 +28,10 @@ SkeletonDAG::connect(StationaryParticle* p, StationaryParticle* q, float w)
 	}
 	else
 	{
-		GraphFactory<StationaryParticle*>* factory = GraphFactory<StationaryParticle*>::GetInstance();
+		GraphFactory<StationaryParticle*>& factory = GraphFactory<StationaryParticle*>::GetInstance();
 		int u = vmap[p];
 		int v = vmap[q];
-		Edge<StationaryParticle*>* edge = factory->makeEdge(vertices[u], vertices[v], w, Forward);
+		Edge<StationaryParticle*>* edge = factory.makeEdge(vertices[u], vertices[v], w, Forward);
 		edges.push_back(edge);
 		return true;
 	}
@@ -41,7 +41,7 @@ SkeletonDAG
 SkeletonDAG::fromMxArray(const mxArray* pptr, const mxArray* eptr)
 {
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
-	GraphFactory<StationaryParticle*>* gfactory = GraphFactory<StationaryParticle*>::GetInstance();
+	GraphFactory<StationaryParticle*>& gfactory = GraphFactory<StationaryParticle*>::GetInstance();
 	SkeletonDAG skeleton;
 
 	const int* dimsP;
@@ -54,7 +54,7 @@ SkeletonDAG::fromMxArray(const mxArray* pptr, const mxArray* eptr)
 		float x = GetData2(P0, i, 0, dimsP[0], dimsP[1], (float)0);
 		float y = GetData2(P0, i, 1, dimsP[0], dimsP[1], (float)0);
 		StationaryParticle* p = sfactory.makeParticle(CParticleF(x, y));
-		skeleton.vertices.push_back(gfactory->makeVertex(p));
+		skeleton.vertices.push_back(gfactory.makeVertex(p));
 		skeleton.vmap[p] = i;
 	}
 	vector<int> T0;
@@ -66,8 +66,8 @@ SkeletonDAG::fromMxArray(const mxArray* pptr, const mxArray* eptr)
 	{
 		int v1 = GetData2(T0, i, 0, dimsT[0], dimsT[1], (int)0) - 1;
 		int v2 = GetData2(T0, i, 1, dimsT[0], dimsT[1], (int)0) - 1;
-		Edge<StationaryParticle*>* e1 = gfactory->makeEdge(skeleton.vertices[v1], skeleton.vertices[v2]);
-		Edge<StationaryParticle*>* e2 = gfactory->makeEdge(skeleton.vertices[v2], skeleton.vertices[v1]);
+		Edge<StationaryParticle*>* e1 = gfactory.makeEdge(skeleton.vertices[v1], skeleton.vertices[v2]);
+		Edge<StationaryParticle*>* e2 = gfactory.makeEdge(skeleton.vertices[v2], skeleton.vertices[v1]);
 		skeleton.vertices[v1]->Add(e1);
 		skeleton.vertices[v2]->Add(e2);
 		skeleton.edges.push_back(e1);

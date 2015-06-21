@@ -63,7 +63,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 
 
-	ParticleFactory::getInstance()->clean();
+	ParticleFactory::getInstance().clean();
 	mexUnlock();
 }
 

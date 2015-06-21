@@ -30,6 +30,7 @@ public:
 		return projection_time == shot.projection_time && *polygon == *shot.polygon;
 	}
 	int getId() const { return id; }
+	Polygon* getPolygon() const { return polygon; }
 private:
 	float projection_time;
 	float created_time;

@@ -191,7 +191,7 @@ MovingParticle::getNextEvent()
 	for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); it++)
 	{
 		EventStruct ev = (*it)->event;
-		if (ev.t < time || (p != NULL && ev.t == time && ev.p->id < p->id))
+		if (ev.t < time || (p != NULL && ev.t == time && ev.p->id > p->id))
 		{
 			p = *it;
 			time = ev.t;

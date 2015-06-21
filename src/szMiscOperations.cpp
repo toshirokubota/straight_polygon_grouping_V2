@@ -375,6 +375,7 @@ areaTriangle(CParticleF& a, CParticleF& b, CParticleF& c)
 }
 
 /*
+It returns true if a point P is STRICTLy INSIDE a polygon PNTS.
 */
 bool
 inside(const CParticleF& p, const vector<CParticleF>& pnts)
@@ -393,6 +394,28 @@ inside(const CParticleF& p, const vector<CParticleF>& pnts)
 			c = !c;
 	}
 	return c;
+}
+
+/*
+It returns true if a point P is INSIDE or ON a polygon PNTS.
+*/
+bool
+contained(const CParticleF& p, const vector<CParticleF>& pnts)
+{
+	float x = p.m_X;
+	float y = p.m_Y;
+	for (int i = 0, j = pnts.size() - 1; i < pnts.size(); j = i++)
+	{
+		if (x == pnts[i].m_X && y == pnts[i].m_Y) return true;
+
+		float xi = pnts[i].m_X;
+		float yi = pnts[i].m_Y;
+		float xj = pnts[j].m_X;
+		float yj = pnts[j].m_Y;
+		if (((yi>y) != (yj > y)) && (x == (float)(xj - xi) * (float)(y - yi) / (float)(yj - yi) + xi))
+			return true;
+	}
+	return inside(p, pnts);
 }
 
 /*

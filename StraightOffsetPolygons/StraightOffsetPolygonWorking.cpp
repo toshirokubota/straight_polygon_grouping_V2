@@ -67,6 +67,71 @@ indices2pairs(vector<int> T, const int* dims)
 	return pairs;
 }
 
+/*
+Returns true if Polygon A contains Polygon B.
+*/
+bool
+contains(vector<CParticleF>& a,  vector<CParticleF>& b)
+{
+	for (int i = 0; i < b.size(); ++i)
+	{
+		if (contained(b[i], a) == false) return false;
+	}
+	if (polygonArea(a) > polygonArea(b)) return true;
+	else return false;
+}
+
+vector<int>
+rankPolygons(vector<Polygon*>& polygons)
+{
+	GraphFactory<Polygon*>& factory = GraphFactory<Polygon*>::GetInstance();
+	vector<Vertex<Polygon*>*> vertices;
+	vector<Edge<Polygon*>*> edges;
+	vector<vector<CParticleF>> boundaries;
+	map<Polygon*, int> pmap;
+	for (int i = 0; i < polygons.size(); ++i)
+	{
+		boundaries.push_back(polygons[i]->original());
+		pmap[polygons[i]] = i;
+	}
+
+	for (int i = 0; i < polygons.size(); ++i)
+	{
+		vertices.push_back(factory.makeVertex(polygons[i]));
+	}
+	for (int i = 0; i < polygons.size(); ++i)
+	{
+		for (int j = 0; j < polygons.size(); ++j)
+		{
+			if (polygons[i] == polygons[j]) continue;
+			if (contains(boundaries[i], boundaries[j]))
+			{
+				Edge<Polygon*>* edge = factory.makeEdge(vertices[i], vertices[j], 1.0f);
+				edges.push_back(edge);
+				vertices[i]->aList.push_back(edge);
+			}
+		}
+	}
+	vector<int> rank(vertices.size(), 0);
+	while (true)
+	{
+		bool bChanged = false;
+		for (int i = 0; i < vertices.size(); ++i)
+		{
+			for (int j = 0; j < vertices[i]->aList.size(); ++j)
+			{
+				int k = pmap[vertices[i]->aList[j]->v->key];
+				if (rank[k] <= rank[i])
+				{
+					rank[k] = rank[i] + 1;
+					bChanged = true;
+				}
+			}
+		}
+		if (bChanged == false) break;
+	}
+	return rank;
+}
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -157,7 +222,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 6)
 	{
-		simulator.dag.sort();
+		vector<Snapshot> snapshots = simulator.closedRegions;
+		vector<Polygon*> polygons;
+		for (int i = 0; i < snapshots.size(); ++i)
+		{
+			polygons.push_back(snapshots[i].getPolygon());
+		}
+		vector<int> rank = rankPolygons(polygons);
+		int dims[2] = { rank.size(), 1 };
+		plhs[5] = StoreData(rank, mxINT32_CLASS, 2, dims);
+
+		/*simulator.dag.sort();
 		vector<Polygon*> polys = simulator.dag.getPolygons();
 		vector<Snapshot> snapshots;
 		for (int i = 0; i < polys.size(); ++i)
@@ -166,7 +241,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			snapshots.push_back(shot);
 		}
 		plhs[5] = Snapshot::StoreSnapshots(snapshots);
-		//plhs[3] = simulator.SaveDoneEvents();
+		//plhs[3] = simulator.SaveDoneEvents();*/
 	}
 
 	ParticleFactory::getInstance().clean();
