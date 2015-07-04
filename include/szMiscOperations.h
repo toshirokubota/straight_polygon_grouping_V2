@@ -3,7 +3,7 @@
 #include <vector>
 using namespace std;
 #include <szParticleF.h>
-const double PI = 3.1415926536;
+const double PI = atan(1.0)*4.0;
 
 int GetOffsetX6(int n);
 
@@ -105,5 +105,11 @@ float Distance2LineSegment(const CParticleF& p, const CParticleF& q, const CPart
 
 float
 polygonArea(vector<CParticleF>& vp);
+
+/*
+Select K indices form 0..(N-1) randomly without replacement.
+*/
+vector<int>
+randomIndices(int n, int k);
 
 #endif /* _SZ_MISC_OPERATIONS_H_ */

@@ -86,7 +86,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 					closedRegions.push_back(shot);
 					Polygon* poly = pfactory.makePolygon(areas[j], time);
 					//if (closedRegions.size() > 4)
-					{
+					/*{
 						printf("iter=%d, trace=%d\n", iter, i + 1);
 						for (int j = 0; j < regions[i].size(); ++j)
 						{
@@ -105,7 +105,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 								printf("\t\t%d %3.3f %3.3f %d\n", areas[j][k]->id, areas[j][k]->p0.m_X, areas[j][k]->p0.m_Y, areas[j][k]->type);
 							}
 						}
-					}
+					}*/
 				}
 			}
 			Snapshot shot(time, 0.0f, tr);
@@ -126,7 +126,7 @@ ParticleSimulator::Simulate(float endtime, float delta, bool bdebug)
 	}
 	for (int i = 0; i < factory.particles.size(); ++i)
 	{
-		factory.particles[i]->printParentTree("\t");
+		//factory.particles[i]->printParentTree("\t");
 	}
 	return bSuccess;
 }

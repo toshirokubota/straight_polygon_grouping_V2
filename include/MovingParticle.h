@@ -24,6 +24,7 @@ const int ParticleDumpSize = 27;
 class MovingParticle
 {
 public:
+	static const int NumParents = 4;
 	friend ParticleFactory; //so that the factory can access _id.
 	friend ParticleSimulator;
 	friend OffsetPolygonDAGBuilder;
@@ -60,8 +61,7 @@ public:
 	}*/
 	MovingParticle* getParent(int j) const
 	{
-		if (j == 0) return this->parents[0];
-		else if (j == 1) return this->parents[1];
+		if (j>=0 && j<NumParents) return this->parents[j];
 		else return NULL;
 	}
 	Polygon* getPolygon() const { return polygon; }
@@ -124,7 +124,7 @@ private:
 		v[0] = v[1] = std::numeric_limits<float>::quiet_NaN();
 		next = NULL;
 		prev = NULL;
-		parents[0] = parents[1] = NULL;
+		parents[0] = parents[1] = parents[2] = parents[3] = NULL;
 		//children[0] = children[1] = NULL;
 		id = _id++;
 		type = t;
@@ -151,7 +151,7 @@ private:
 	CParticleF p;
 	MovingParticle* next;
 	MovingParticle* prev;
-	MovingParticle* parents[2];
+	MovingParticle* parents[NumParents];
 	//MovingParticle* children[2];
 	MovingFront rear;
 	MovingFront front;

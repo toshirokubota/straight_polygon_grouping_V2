@@ -61,7 +61,7 @@ MovingParticle::printParentTree(char* tab) const
 	}
 	//else
 	{
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < MovingParticle::NumParents; ++i)
 		{
 			if (this->parents[i] != NULL)
 			{
@@ -659,6 +659,9 @@ MovingParticle::applyEvent()
 		if (pnew[i]->calculateVelocityR() == false)
 		{
 			pnew[i]->bUnstable = true;
+			/*pnew[i]->parents[3] = pnew[i]->parents[1];
+			pnew[i]->parents[1] = pnew[i]->prev;
+			pnew[i]->parents[2] = pnew[i]->next;*/
 			MovingParticle* ptmp = pnew[i];
 			pnew[i] = traceAndHandleUnstable(pnew[i], pnew[i==0? 1: 0]);
 			factory.inactivate(ptmp);
@@ -963,7 +966,7 @@ _traceBack(MovingParticle* p, vector<MovingParticle*>& trace, set<MovingParticle
 	}
 	else
 	{
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < MovingParticle::NumParents; ++i)
 		{
 			if (p->getParent(i) != NULL)
 			{

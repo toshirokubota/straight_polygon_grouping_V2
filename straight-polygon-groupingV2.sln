@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StraightOffsetPolygonsSkele
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StraightOffsetPolygon3D", "StraightOffsetPolygons3D\StraightOffsetPolygon3D.vcxproj", "{A6A688FA-9607-4D6F-936A-A192FFFC8636}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EMGClustering", "EMClustering\EMGClustering.vcxproj", "{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -51,6 +53,14 @@ Global
 		{A6A688FA-9607-4D6F-936A-A192FFFC8636}.Release|Win32.Build.0 = Release|Win32
 		{A6A688FA-9607-4D6F-936A-A192FFFC8636}.Release|x64.ActiveCfg = Release|x64
 		{A6A688FA-9607-4D6F-936A-A192FFFC8636}.Release|x64.Build.0 = Release|x64
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Debug|Win32.Build.0 = Debug|Win32
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Debug|x64.ActiveCfg = Debug|x64
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Debug|x64.Build.0 = Debug|x64
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Release|Win32.ActiveCfg = Release|Win32
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Release|Win32.Build.0 = Release|Win32
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Release|x64.ActiveCfg = Release|x64
+		{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
