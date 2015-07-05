@@ -117,12 +117,12 @@ EMGaussianClustering(vector<Feature>& points, int K, int maxIter, float toleranc
 		//Compute the covariances
 		for (int i = 0; i < K; ++i)
 		{
-			math::matrix<float> cov(N, N, 0);
-			math::matrix<float> m = Feature::toColumnVector(dist2[i].mu);
+			techsoft::matrix<float> cov(N, N, 0.0f);
+			techsoft::matrix<float> m = Feature::toColumnVector(dist2[i].mu);
 			float sum = 0;
 			for (int j = 0; j < points.size(); ++j)
 			{
-				math::matrix<float> df(N, 1);
+				techsoft::matrix<float> df(N, 1);
 				for (int k = 0; k < N; ++k)
 				{
 					df(k,0) = points[j].vals[k] - m(k, 0);
@@ -132,7 +132,7 @@ EMGaussianClustering(vector<Feature>& points, int K, int maxIter, float toleranc
 			cov /= vsum[i];
 			dist2[i].sgm = Covariance(K);
 			dist2[i].sgm.mat = cov;
-			dist2[i].sgm.imat = cov.Inv();
+			dist2[i].sgm.imat = !cov;
 		}
 		dist = dist2;
 	}

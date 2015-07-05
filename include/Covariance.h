@@ -1,6 +1,6 @@
 #pragma once
 #include <Feature.h>
-#include <stdMatrix.h>
+#include <cmatrix>
 #include <vector>
 using namespace std;
 
@@ -19,6 +19,6 @@ public:
 	}
 
 	int ndim;
-	math::matrix<float> mat;
-	math::matrix<float> imat;
+	techsoft::matrix<float> mat;
+	techsoft::matrix<float> imat;
 };

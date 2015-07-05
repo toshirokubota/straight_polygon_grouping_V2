@@ -19,10 +19,10 @@ public:
 	float eval(Feature x0)
 	{
 		int k = x0.length();
-		math::matrix<float> m = Feature::toColumnVector(mu);
-		math::matrix<float> x = Feature::toColumnVector(x0);
-		math::matrix<float> d = (~(m - x))*sgm.imat*(m - x);
-		return exp(-d(0, 0) / 2.0) / (pow(2 * PI, k / 2.0) * sqrt(sgm.mat.Det()));
+		techsoft::matrix<float> m = Feature::toColumnVector(mu);
+		techsoft::matrix<float> x = Feature::toColumnVector(x0);
+		techsoft::matrix<float> d = (~(m - x))*sgm.imat*(m - x);
+		return exp(-d(0, 0) / 2.0) / (pow(2 * PI, k / 2.0) * sqrt(sgm.mat.det()));
 	}
 
 	Feature mu;

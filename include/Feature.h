@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <limits>
-#include <stdMatrix.h>
+#include <cmatrix>
 using namespace std;
 //a generic feature vector
 
@@ -54,9 +54,9 @@ public:
 		return mu;
 	}
 
-	static math::matrix<float> toColumnVector(const Feature& f)
+	static techsoft::matrix<float> toColumnVector(const Feature& f)
 	{
-		math::matrix<float> v(f.length(), 1);
+		techsoft::matrix<float> v(f.length(), 1);
 		for (int i = 0; i < f.length(); ++i)
 		{
 			v[i][0] = f.vals[i];

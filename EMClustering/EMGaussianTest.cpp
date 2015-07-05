@@ -56,8 +56,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mxClassID classMode;
 		ReadScalar(K, prhs[1], classMode);
 	}
+	int iter = 0;
+	if (nrhs >= 3)
+	{
+		mxClassID classMode;
+		ReadScalar(iter, prhs[2], classMode);
+	}
 
-	vector<GaussianDistribution> dist = EMGaussianClustering(P, K, 0);
+	vector<GaussianDistribution> dist = EMGaussianClustering(P, K, iter);
 	vector<int> labels(P.size());
 	for (int i = 0; i < labels.size(); ++i)
 	{
@@ -77,10 +83,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		{
 			SetData2(F, i, 0, dims[0], dims[1], dist[i].mu.vals[0]);
 			SetData2(F, i, 1, dims[0], dims[1], dist[i].mu.vals[1]);
-			SetData2(F, i, 2, dims[0], dims[1], dist[i].sgm.mat[0][0]);
-			SetData2(F, i, 3, dims[0], dims[1], dist[i].sgm.mat[0][1]);
-			SetData2(F, i, 4, dims[0], dims[1], dist[i].sgm.mat[1][0]);
-			SetData2(F, i, 5, dims[0], dims[1], dist[i].sgm.mat[1][1]);
+			SetData2(F, i, 2, dims[0], dims[1], (float)dist[i].sgm.mat(0, 0));
+			SetData2(F, i, 3, dims[0], dims[1], (float)dist[i].sgm.mat(0, 1));
+			SetData2(F, i, 4, dims[0], dims[1], (float)dist[i].sgm.mat(1, 0));
+			SetData2(F, i, 5, dims[0], dims[1], (float)dist[i].sgm.mat(1, 1));
 		}
 		plhs[1] = StoreData(F, mxSINGLE_CLASS, 2, dims);
 	}
