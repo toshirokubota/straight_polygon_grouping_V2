@@ -360,7 +360,7 @@ MovingParticle::_splitTime(const MovingParticle* q, const MovingParticle* r, flo
 
 	ParticleDirection ve((1 - dp)*u.x, (1 - dp)*u.y);
 
-	CParticleF y = Closest2Line(q->p, r->p, p);
+	CParticleF y = Closest2Line(q->p, CParticleF(q->p.m_X + q->front.dir.x, q->p.m_Y + q->front.dir.y), p);
 	float deriv = (y.m_X - p.m_X)*ve.x + (y.m_Y - p.m_Y) * ve.y;
 	if (deriv >= 0) return std::numeric_limits<float>::infinity(); //moving away
 
@@ -486,6 +486,8 @@ MovingParticle::findNextSplitEvent() const
 	{
 		const MovingParticle* q = *j; 
 		const MovingParticle* r = q->next;
+		if (id == 373 && (q->id == 99))
+			ev.t += 0;
 		if (this == q || this->next == q || this==r || this->prev==r) continue;
 		/*if ((Abs(this->created - q->created) < 1.0e-8 && Distance(this->p, q->p) < 1.0e-3) ||
 			(Abs(this->created - r->created) < 1.0e-8 && Distance(this->p, r->p) < 1.0e-3))

@@ -186,7 +186,7 @@
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
     <ClCompile Include="..\src\TriangulateBourke.cpp" />
     <ClCompile Include="..\src\Triangulation.cpp" />
-    <ClCompile Include="GraphThinningTest.cpp" />
+    <ClCompile Include="GraphThinningTestV2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Covariance.h" />

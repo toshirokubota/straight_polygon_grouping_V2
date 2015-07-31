@@ -1,10 +1,10 @@
-#include <ParticleSimulatorSkeleton.h>
+#include <ParticleSimulatorUC.h>
 
 /*
 Tunneling simulation only considers  edge events (i.e. collision of adjacent particles)
 */
 bool
-ParticleSimulatorSkeleton::Simulate(float endtime, float delta, bool bdebug)
+ParticleSimulatorUC::Simulate(float endtime, float delta, bool bdebug)
 {
 	ParticleFactory& factory = ParticleFactory::getInstance();
 	StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
@@ -27,10 +27,6 @@ ParticleSimulatorSkeleton::Simulate(float endtime, float delta, bool bdebug)
 				float dpx = Distance(p->getP(), x);
 				float dqx = Distance(q->getP(), x);
 				float ratio = dpq / (dpx + dqx);
-				if (ratio > thres)
-				{
-					skeletons.push_back(ParticleSkeleton(p, q, x));
-				}
 			}
 		}
 	}

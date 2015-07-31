@@ -28,10 +28,11 @@ using namespace std;
 #include <MovingParticle.h>
 #include <ParticleSimulator.h>
 
-GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
-ParticleFactory* ParticleFactory::_instance = NULL;
+//GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
+//ParticleFactory* ParticleFactory::_instance = NULL;
 
 int MovingParticle::_id = 0;
+int Polygon::_id = 0;
 
 mxArray*
 StoreContours(const vector<vector<CParticleF>>& polygons)
@@ -72,13 +73,13 @@ indices2pairs(vector<int> T, const int* dims)
 vector<vector<MovingParticle*>> 
 collectPolygons()
 {
-	ParticleFactory* factory = ParticleFactory::getInstance();
+	ParticleFactory& factory = ParticleFactory::getInstance();
 	vector<vector<MovingParticle*>> polygons;
 	set<MovingParticle*> pset;
 	while (true)
 	{
 		bool bdone = true;
-		for (set<MovingParticle*>::iterator it = factory->activeSet.begin(); it != factory->activeSet.end(); ++it)
+		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
 		{
 			MovingParticle* p = *it;
 			if (pset.find(p) == pset.end())
@@ -121,6 +122,7 @@ onSideAt(CParticleF& o, MovingParticle* q, MovingParticle* r, float t, float eps
 	float d = Distance2LineSegment(q2, r2, o);
 	return d <= eps;
 }*/
+
 
 bool
 onSideAt(CParticleF& o, MovingParticle* q, MovingParticle* r, float t, float eps)
@@ -236,7 +238,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	}
 
-	ParticleFactory::getInstance()->clean();
+	ParticleFactory::getInstance().clean();
 	mexUnlock();
 }
 

@@ -28,10 +28,11 @@ using namespace std;
 #include <MovingParticle.h>
 #include <ParticleSimulatorSkeleton.h>
 
-GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
-ParticleFactory* ParticleFactory::_instance = NULL;
+//GraphFactory<StationaryParticle*>* GraphFactory<StationaryParticle*>::_instance = NULL;
+//ParticleFactory* ParticleFactory::_instance = NULL;
 
 int MovingParticle::_id = 0;
+int Polygon::_id = 0;
 
 vector<pair<int, int>>
 indices2pairs(vector<int> T, const int* dims)
@@ -64,46 +65,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mxClassID classIdP;
 		int ndimP;
 		LoadData(P0, prhs[0], classIdP, ndimP, &dimsP);
-		if (dimsP[1] == ParticleDumpSize)
-		{
-			float time0 = std::numeric_limits<float>::infinity();
-			simulator.LoadParticles(P0, dimsP);
-			if (nrhs >= 2)
-			{
-				mxClassID classMode;
-				vector<Snapshot> snapshots = Snapshot::LoadSnapshots(prhs[1]);
-				simulator.Restore(snapshots);
-			}
-		}
-		else
-		{
-			StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
-			for (int i = 0; i < dimsP[0]; ++i)
-			{
-				float x = GetData2(P0, i, 0, dimsP[0], dimsP[1], (float)0);
-				float y = GetData2(P0, i, 1, dimsP[0], dimsP[1], (float)0);
-				points.push_back(sfactory.makeParticle(CParticleF(x, y)));
-			}
-			//edges (indices to the points)
-			vector<pair<int, int>> E;
-			{
-				vector<int> T0;
-				mxClassID classIdT;
-				int ndimT;
-				const int* dimsT;
-				LoadData(T0, prhs[1], classIdT, ndimT, &dimsT);
-				E = indices2pairs(T0, dimsT);
-			}
 
-			float initTime = 0.01f;
-			if (nrhs >= 6)
-			{
-				mxClassID classMode;
-				ReadScalar(initTime, prhs[5], classMode);
-			}
-			simulator.Prepare(points, E, initTime);
+		StationaryParticleFactory& sfactory = StationaryParticleFactory::getInstance();
+		for (int i = 0; i < dimsP[0]; ++i)
+		{
+			float x = GetData2(P0, i, 0, dimsP[0], dimsP[1], (float)0);
+			float y = GetData2(P0, i, 1, dimsP[0], dimsP[1], (float)0);
+			points.push_back(sfactory.makeParticle(CParticleF(x, y)));
 		}
+		//edges (indices to the points)
+		vector<pair<int, int>> E;
+		{
+			vector<int> T0;
+			mxClassID classIdT;
+			int ndimT;
+			const int* dimsT;
+			LoadData(T0, prhs[1], classIdT, ndimT, &dimsT);
+			E = indices2pairs(T0, dimsT);
+		}
+
+		float initTime = 0.01f;
+		if (nrhs >= 6)
+		{
+			mxClassID classMode;
+			ReadScalar(initTime, prhs[5], classMode);
+		}
+		simulator.Prepare(points, E, initTime);
 	}
+
+
 	float thres = 0.99f;
 	if (nrhs >= 3)
 	{

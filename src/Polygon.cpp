@@ -23,12 +23,12 @@ Polygon::original()
 	return c;
 }
 
-Polygon::Polygon(vector<MovingParticle*>& vp, float creation_time)
+Polygon::Polygon(vector<MovingParticle*>& vp, float creation_time, int t)
 {
 	this->particles = vp;
 	this->creation_time = creation_time;
 	id = _id++;
-	level = 0;
+	type = t;
 	for (int i = 0; i < vp.size(); ++i)
 	{
 		//pset.insert(vp[i]);

@@ -31,7 +31,7 @@ public:
 	}
 	int getId() const { return id; }
 	Polygon* getPolygon() const { return polygon; }
-private:
+protected:
 	float projection_time;
 	float created_time;
 	Polygon* polygon;

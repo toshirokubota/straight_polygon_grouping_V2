@@ -184,6 +184,7 @@
     <ClCompile Include="..\src\MiscGeometry.cpp" />
     <ClCompile Include="..\src\MovingParticle.cpp" />
     <ClCompile Include="..\src\ParticleSimulator.cpp" />
+    <ClCompile Include="..\src\ParticleSimulatorGreedy.cpp" />
     <ClCompile Include="..\src\Polygon.cpp" />
     <ClCompile Include="..\src\PolygonDAG.cpp" />
     <ClCompile Include="..\src\Snapshot.cpp" />
@@ -191,7 +192,7 @@
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="StraightOffsetPolygonWorking.cpp" />
+    <ClCompile Include="StraightOffsetPolygonGreedy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mexFileIO.h" />
@@ -200,6 +201,7 @@
     <ClInclude Include="..\include\MovingParticle.h" />
     <ClInclude Include="..\include\ParticleDirection.h" />
     <ClInclude Include="..\include\ParticleSimulator.h" />
+    <ClInclude Include="..\include\ParticleSimulatorGreedy.h" />
     <ClInclude Include="..\include\Polygon.h" />
     <ClInclude Include="..\include\PolygonDAG.h" />
     <ClInclude Include="..\include\Snapshot.h" />

@@ -70,6 +70,7 @@ public:
 	//bool isInitialized() const { return bInitialized; }
 	bool isReflex() const; //check if it is concave (reflex) that allows splitting of a side
 	bool isLeaf() const { return bLeaf; }
+	bool isUnstable() const { return bUnstable; }
 	void setEvent(EventStruct ev) {event = ev; }
 	CParticleF move(float delta) const
 	{
@@ -82,7 +83,8 @@ public:
 	}
 	bool updateEvent();
 	bool initializeVelocity();
-	pair<MovingParticle*,MovingParticle*> applyEvent();
+	bool calculateVelocityR();
+	pair<MovingParticle*, MovingParticle*> applyEvent();
 	vector<float> dump2vector(); //store the current state as a vector of float 
 	EventStruct findNextEdgeEvent() const;
 	EventStruct findNextSplitEvent() const;
@@ -97,6 +99,12 @@ public:
 		p->reflexive = GetVisualAngle2(p->prev->p.m_X, p->prev->p.m_Y, p->next->p.m_X, p->next->p.m_Y, p->p.m_X, p->p.m_Y);
 		p->rear = prev->front;
 		p->front = next->rear;
+	}
+	static void setNeighbors(MovingParticle* p, MovingParticle* prev, MovingParticle* next, MovingFront rear, MovingFront front)
+	{
+		setNeighbors(p, prev, next);
+		p->rear = rear;
+		p->front = front;
 	}
 	static vector<MovingParticle*> vectorize(MovingParticle* p);
 	static bool updatePolygon(MovingParticle* p);
@@ -144,7 +152,6 @@ private:
 	float MovingParticle::_splitTime(const MovingParticle* q, const MovingParticle* r, float eps = 1.0e-3) const;
 	bool _onSideAt(const MovingParticle* q, float t, float eps = 1.0e-3) const;
 	void _setParents(EventStruct cause, bool bSide);
-	bool calculateVelocityR();
 
 	StationaryParticle* init_particle;
 	CParticleF p0;
@@ -191,7 +198,7 @@ struct ParticleFactory
 		particles.push_back(particle);
 		activeSet.insert(particle);
 		pmap[particle->id] = particle;
-		if (particle->id == 66)
+		if (particle->id == 433)
 		{
 			particle->id += 0;
 		}

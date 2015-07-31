@@ -98,10 +98,10 @@ vector<vector<Feature>> divideClusters(vector<Feature>& P, vector<int>& labels, 
 }
 
 /*
-Find medial axis points of isolated points via triangulation.
+Find deepest internal points and remove edges that connects to the outer edges.
 */
 vector<Feature> 
-MedialAxisPoints(vector<Feature>& P, float space)
+CreatBottlenecks(vector<Feature>& P, float space)
 {
 	vector<CParticleF> points(P.size());
 	for (int i = 0; i < P.size(); ++i)
@@ -144,9 +144,10 @@ MedialAxisPoints(vector<Feature>& P, float space)
 			outer.push_back(ed);
 		}
 	}
-	//collect medial vertices
+	//find distance values
 	vector<Triangulation::_Internal::_vertex*> medial;
 	map<Triangulation::_Internal::_vertex*, float> dmap;
+	float dmax = 0; //the largest minimum distance value
 	for (int i = 0; i < trmap.points.size(); ++i)
 	{
 		Triangulation::_Internal::_vertex* v = trmap.points[i];
@@ -160,46 +161,23 @@ MedialAxisPoints(vector<Feature>& P, float space)
 			}
 		}
 		dmap[v] = dmin;
+		dmax = Max(dmax, dmin); 
 	}
+
+	vector<Triangulation::_Internal::_vertex*> deepest;
 	for (int i = 0; i < trmap.points.size(); ++i)
 	{
 		Triangulation::_Internal::_vertex* v = trmap.points[i];
-		set<Triangulation::_Internal::_triangle*> tset;
-		for (int j = 0; j < v->edges.size(); ++j)
+		if (dmap[v] >= dmax)
 		{
-			if (v->edges[j]->faces[0]) tset.insert(v->edges[j]->faces[0]);
-			if (v->edges[j]->faces[1]) tset.insert(v->edges[j]->faces[1]);
-		}
-		bool bmedial = true;
-		//if the vertices has a face whose two other vertices have larger D-values, then the vertix is NOT
-		//medial axis one.
-		for (set<Triangulation::_Internal::_triangle*>::iterator ti = tset.begin();
-			ti != tset.end(); ++ti)
-		{
-			Triangulation::_Internal::_triangle* tr = *ti;
-			for (int j = 0; j < 3; ++j)
-			{
-				if (tr->vertices[j] == v)
-				{
-					if (dmap[v] < dmap[tr->vertices[(j + 1) % 3]] && dmap[v] < dmap[tr->vertices[(j + 2) % 3]])
-					{
-						bmedial = false;
-					}
-				}
-			}
-		}
-		if (bmedial)
-		{
-			medial.push_back(v);
+			deepest.push_back(v);
 		}
 	}
 
-	vector<Feature> Q(medial.size());
-	for (int i = 0; i < medial.size(); ++i)
+	vector<Triangulation::_Internal::_edge*> toremove;
+	for (int i = 0; i < deepest.size(); ++i)
 	{
-		Q[i] = P[pimap[medial[i]]];
 	}
-	return Q;
 }
 
 /*

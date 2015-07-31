@@ -25,12 +25,12 @@ public:
 	vector<MovingParticle*> getParticles() const { return particles; }
 
 private:
-	Polygon(vector<MovingParticle*>& vp, float creation_time);
+	Polygon(vector<MovingParticle*>& vp, float creation_time, int t = 0);
 	vector<MovingParticle*> particles;
 	//set<MovingParticle*> pset;
 	set<StationaryParticle*> sset;
 	float creation_time;
-	int level;
+	int type;
 	int id;
 	static int _id;
 };
