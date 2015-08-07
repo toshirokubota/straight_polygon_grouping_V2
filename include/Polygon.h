@@ -23,11 +23,12 @@ public:
 	int getId() const { return id; }
 	float getCreatedTime() const { return creation_time; }
 	vector<MovingParticle*> getParticles() const { return particles; }
-
+	bool contains(StationaryParticle* p) const { return p!=NULL && sset.find(p) != sset.end(); }
+	bool contains(MovingParticle* p) const { return p != NULL && pset.find(p) != pset.end(); }
 private:
 	Polygon(vector<MovingParticle*>& vp, float creation_time, int t = 0);
 	vector<MovingParticle*> particles;
-	//set<MovingParticle*> pset;
+	set<MovingParticle*> pset;
 	set<StationaryParticle*> sset;
 	float creation_time;
 	int type;

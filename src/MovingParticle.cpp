@@ -533,6 +533,50 @@ MovingParticle::findNextSplitEvent() const
 	return ev;
 }
 
+/*
+restrict serch of the next event within the given set. The set typically is a set of particles in the current polygon.
+*/
+EventStruct
+MovingParticle::findNextSplitEvent(const vector<MovingParticle*>& vp) const
+{
+	EventStruct ev(std::numeric_limits<float>::infinity(), SplitEvent, this);
+	for (int j = 0; j<vp.size(); ++j)
+	{
+		const MovingParticle* q = vp[j];
+		const MovingParticle* r = q->next;
+		if (this == q || this->next == q || this == r || this->prev == r) continue;
+		float t0 = intersectSideAndLine(this, q, r); // period - p->time);
+		if (t0 >= 0)
+		{
+			float t = t0 + time;
+			if (t < ev.t)
+			{
+				ev.t = t;
+				ev.q = q;
+				ev.r = r;
+			}
+		}
+	}
+	//if the event location is close to a vertex of being split, then make it as Collision
+	if (ev.q != NULL)
+	{
+		float t0 = ev.t - time;
+		CParticleF p0 = move(t0);
+		float dq = Distance(p0, ev.q->move(t0));
+		float dr = Distance(p0, ev.r->move(t0));
+		if (dq < MP_EPSILON || dr < MP_EPSILON)
+		{
+			ev.type = CollisionEvent;
+			if (dr < dq)
+			{
+				ev.q = ev.r;
+				ev.r = ev.q->next;
+			}
+		}
+	}
+
+	return ev;
+}
 
 bool
 MovingParticle::updateEvent()
@@ -1052,5 +1096,61 @@ MovingParticle::closedRegions(vector<MovingParticle*>& points)
 
 	_splitNow(points, 0, points.size() - 1, match, polygons);
 
+	return polygons;
+}
+
+/*
+From a vectorized particles, extract subsets that form closed regions IN TERMS OF INITIAL PARTICLES.
+This is a faster version of closedRegion and does not work when we have to consider OFFSET POLYGONS.
+*/
+vector<vector<MovingParticle*>>
+MovingParticle::closedRegions2(vector<MovingParticle*>& points)
+{
+	vector<vector<MovingParticle*>> polygons;
+	set<StationaryParticle*> pset;
+	map<StationaryParticle*, int> pmap;
+	vector<MovingParticle*> vstack; //vector being used as a stack
+	int first = 0, last = 0;
+	for (int i = 0; i < points.size(); ++i)
+	{
+		StationaryParticle* sp = points[i]->init_particle;
+		if (pset.find(sp) != pset.end())
+		{
+			vector<MovingParticle*> poly;
+			int k = pmap[sp];
+			if (k >= vstack.size())
+			{
+				printf("%d %d\n", i, k);
+				for (int m = 0; m<points.size(); ++m)
+				{
+					printf("%d %f %f\n", points[m]->id, points[m]->p.m_X, points[m]->p.m_Y);
+				}
+				mexErrMsgTxt("Failed tracing in closedRegions2.\n");
+			}
+			poly.insert(poly.begin(), vstack.begin() + k, vstack.end());
+			if (poly.size()>2)
+			{
+				polygons.push_back(poly);
+			}
+			vstack.erase(vstack.begin() + k, vstack.end());
+		}
+		else
+		{
+			pset.insert(sp);
+			if (i == points.size() - 1) //wrap around the loop to end it
+			{
+				StationaryParticle* sp0 = points[0]->init_particle;
+				vector<MovingParticle*> poly = vstack;
+				if (poly.size() > 2)
+				{
+					poly.push_back(points[i]);
+					polygons.push_back(poly);
+				}
+				vstack.clear();
+			}
+		}
+		pmap[sp] = vstack.size(); //mark the last encounter of this.
+		vstack.push_back(points[i]);
+	}
 	return polygons;
 }

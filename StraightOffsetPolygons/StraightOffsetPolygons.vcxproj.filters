@@ -43,10 +43,7 @@
     <ClCompile Include="..\src\Polygon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\ParticleSimulatorGreedy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StraightOffsetPolygonGreedy.cpp">
+    <ClCompile Include="StraightOffsetPolygonWorking.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -97,9 +94,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\StationaryParticle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\ParticleSimulatorGreedy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

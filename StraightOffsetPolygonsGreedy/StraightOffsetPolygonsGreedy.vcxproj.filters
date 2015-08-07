@@ -31,13 +31,22 @@
     <ClCompile Include="..\src\EventStruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\ParticleSimulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\Snapshot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="StraightOffsetPolygonDAG.cpp">
+    <ClCompile Include="..\src\PolygonDAG.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\OffsetPolygonDAGBuilder.cpp">
+    <ClCompile Include="..\src\Polygon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StraightOffsetPolygonGreedy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ParticleSimulatorGreedy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -69,6 +78,9 @@
     <ClInclude Include="..\include\MovingParticle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\ParticleSimulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\Snapshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,13 +90,16 @@
     <ClInclude Include="..\include\MovingFront.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\OffsetPolygonDAGBuilder.h">
+    <ClInclude Include="..\include\Polygon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\PolygonDAG.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\StationaryParticle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\SkeletonDAG.h">
+    <ClInclude Include="..\include\ParticleSimulatorGreedy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

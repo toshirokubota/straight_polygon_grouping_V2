@@ -31,7 +31,7 @@ Polygon::Polygon(vector<MovingParticle*>& vp, float creation_time, int t)
 	type = t;
 	for (int i = 0; i < vp.size(); ++i)
 	{
-		//pset.insert(vp[i]);
+		pset.insert(vp[i]);
 	}
 	for (int i = 0; i < vp.size(); ++i)
 	{

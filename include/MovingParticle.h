@@ -53,12 +53,6 @@ public:
 	float getTime() const { return time; }
 	float getCreatedTime() const { return created; }
 	MovingParticleType getType() const { return type; }
-	/*MovingParticle* getChildren(int j) const
-	{
-		if (j == 0) return this->children[0];
-		else if (j == 1) return this->children[1];
-		else return NULL;
-	}*/
 	MovingParticle* getParent(int j) const
 	{
 		if (j>=0 && j<NumParents) return this->parents[j];
@@ -67,7 +61,6 @@ public:
 	Polygon* getPolygon() const { return polygon; }
 	void setPolygon(Polygon* poly) { polygon = poly; }
 	bool isActive() const { return bActive; }
-	//bool isInitialized() const { return bInitialized; }
 	bool isReflex() const; //check if it is concave (reflex) that allows splitting of a side
 	bool isLeaf() const { return bLeaf; }
 	bool isUnstable() const { return bUnstable; }
@@ -88,6 +81,7 @@ public:
 	vector<float> dump2vector(); //store the current state as a vector of float 
 	EventStruct findNextEdgeEvent() const;
 	EventStruct findNextSplitEvent() const;
+	EventStruct findNextSplitEvent(const vector<MovingParticle*>& vp) const;
 
 	static float frontPropAngle(MovingParticle* p, MovingParticle* q); //find the angle of propagating front p-q.
 	static void setNeighbors(MovingParticle* p, MovingParticle* prev, MovingParticle* next)
@@ -118,6 +112,7 @@ public:
 	//static void _traceBack(MovingParticle* p, vector<MovingParticle*>& trace, set<MovingParticle*>& pset);
 	static vector<MovingParticle*> MovingParticle::traceBackPolygon(vector<MovingParticle*>& particles);
 	static vector<vector<MovingParticle*>> closedRegions(vector<MovingParticle*>& points);
+	static vector<vector<MovingParticle*>> closedRegions2(vector<MovingParticle*>& points);
 	static pair<MovingParticle*, float> findIntersection(MovingParticle* p, MovingParticle* q);
 	static float intersectSideAndLine(const MovingParticle* p, const MovingParticle* q, const MovingParticle* r);
 	static MovingParticle* traceAndHandleUnstable(MovingParticle* p, MovingParticle* parent);

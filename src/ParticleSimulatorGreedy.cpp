@@ -41,7 +41,7 @@ _fitnessMeasure(vector<CParticleF>& vp, float scale)
 	return sqrt(area) / scale;
 }
 
-float
+/*float
 computeFitness(EventStruct ev)
 {
 	float maxFit = 0;
@@ -78,7 +78,7 @@ computeFitness(EventStruct ev)
 		}
 		else //p == re : pe and qe are disjoint.
 		{
-			/*pe->updateEvent();
+			pe->updateEvent();
 			vp1.push_back(p->getP());
 			for (int i = 0; i < vp1.size(); ++i)
 			{
@@ -96,7 +96,122 @@ computeFitness(EventStruct ev)
 				vp1.push_back(p->getP());
 				p = p->getPrev();
 			}
-			maxFit = Max(maxFit, _fitnessMeasure(vp1, scale));*/
+			maxFit = Max(maxFit, _fitnessMeasure(vp1, scale));
+		}
+	}
+	return maxFit;
+}*/
+
+/*
+from a vector of particles (VP), find a polygon with non-zero area that contains the particle, P.
+*/
+vector<MovingParticle*>
+extractClosedPolygon(MovingParticle* p0, MovingParticle* pend)
+{
+	struct _Linker {
+		MovingParticle* p;
+		_Linker* prev;
+		_Linker(MovingParticle* p)
+		{
+			this->p = p;
+			prev = NULL;
+		}
+	};
+
+	int id = p0->getId(); //used as a unique number to detect looping
+
+	vector<_Linker*> vl;
+	_Linker* pl = new _Linker(p0);
+	p0->getInitParticle()->link = (void*)pl;
+	p0->getInitParticle()->info = id;
+	vl.push_back(pl);
+	MovingParticle* p = p0->getNext();
+	while (p != pend)
+	{
+		if (p == p0) //could not reach pend. Cannot continue
+		{
+			mexErrMsgTxt("Failed to find a path from p0 to pend in ParticleSimulatorGreedy::extractClosedPolygon().");
+		}
+		int id0 = p->getInitParticle()->info;
+		_Linker* pl2 = new _Linker(p);
+		if (id0 == id) //a loop is found. Break it.
+		{
+			_Linker* pl3 = (_Linker*)p->getInitParticle()->link;
+			pl2->prev = pl3->prev;
+		}
+		else
+		{
+			pl2->prev = pl;
+		}
+
+		vl.push_back(pl2);
+		pl = pl2;
+		p->getInitParticle()->link = (void*)pl;
+		p->getInitParticle()->info = id;
+		p = p->getNext();
+	}
+
+	//trace back
+	vector<MovingParticle*> area;
+	while (pl != NULL)
+	{
+		area.insert(area.begin(), pl->p);
+		pl = pl->prev;
+	}
+
+	//clean up
+	for (int i = 0; i < vl.size(); ++i)
+	{
+		vl[i]->p->getInitParticle()->info = -1;
+		vl[i]->p->getInitParticle()->link = NULL;
+
+		delete vl[i];
+		vl[i] = NULL;
+	}
+	return area;
+}
+
+float
+ParticleSimulatorGreedy::computeFitness(EventStruct ev)
+{
+	float maxFit = 0;
+	float scale = 100;
+	if (ev.type == SplitEvent || ev.type == CollisionEvent)
+	{
+		MovingParticle* pe = (MovingParticle*)ev.p;
+		MovingParticle* qe = (MovingParticle*)ev.q;
+		MovingParticle* re = (MovingParticle*)ev.r;
+		if (pe != NULL && qe != NULL && re != NULL)
+		{
+			CParticleF f = makeSplitParticle(ev);
+			{
+				vector<MovingParticle*> area = extractClosedPolygon(pe, qe);
+				if (area.empty() == false)
+				{
+					vector<CParticleF> vp0;
+					for (int i = 0; i < area.size(); ++i)
+					{
+						vp0.push_back(area[i]->getP());
+					}
+					vp0.push_back(qe->getP());
+					vp0.push_back(f);
+					maxFit = Max(maxFit, _fitnessMeasure(vp0, Distance(f, pe->getP()) * 2));
+				}
+			}
+			{
+				vector<MovingParticle*> area = extractClosedPolygon(pe, re);
+				if (area.empty() == false)
+				{
+					vector<CParticleF> vp0;
+					for (int i = 0; i < area.size(); ++i)
+					{
+						vp0.push_back(area[i]->getP());
+					}
+					vp0.push_back(re->getP());
+					vp0.push_back(f);
+					maxFit = Max(maxFit, _fitnessMeasure(vp0, Distance(f, pe->getP()) * 2));
+				}
+			}
 		}
 	}
 	return maxFit;
@@ -115,6 +230,7 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 	}
 	float thres = delta;
 	int iter = 0;
+	map<MovingParticle*, float> fmap;
 	while (iter < endtime)
 	{
 		iter++;
@@ -125,16 +241,27 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 			if (p->isUnstable()) continue;
 			if (p->isReflex())
 			{
-				if (p->getId() == 373)
-					iter += 0;
-				p->setEvent(EventStruct()); //reset the event
-				p->updateEvent();
-				float  fitness = computeFitness(p->getEvent());
-				if (fitness != fitness)
+				float fitness = -std::numeric_limits<float>::infinity();
+				if (fmap.find(p) != fmap.end())
 				{
-					fitness = 0.0f;
+					fitness = fmap[p];
+				}
+				Polygon* polygon = p->getPolygon();
+				EventStruct ev = p->getEvent();
+				if (polygon->contains((MovingParticle*)ev.q) && polygon->contains((MovingParticle*)ev.r))
+				{
+				}
+				else
+				{
+					p->setEvent(p->findNextSplitEvent(p->getPolygon()->getParticles()));
+					fitness = computeFitness(p->getEvent());
+					if (fitness != fitness)
+					{
+						fitness = -std::numeric_limits<float>::infinity();
+					}
 				}
 				pairs.push_back(pair<float, MovingParticle*>(fitness, p));
+				fmap[p] = fitness;
 			}
 		}
 		if (pairs.empty()) break;
@@ -142,7 +269,7 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 		sort(pairs.begin(), pairs.end());
 		MovingParticle* p = (*(pairs.end() - 1)).second;
 		float fvalue = (*(pairs.end() - 1)).first;
-		if (fvalue < thres || fvalue != fvalue)
+		if (fvalue <= thres || fvalue != fvalue)
 			break;
 
 		//apply the event
@@ -160,12 +287,15 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 		{
 			if (ap[i] != NULL)
 			{
-				vector<vector<MovingParticle*>> areas = MovingParticle::closedRegions(MovingParticle::vectorize(ap[i]));
+				/*vector<vector<MovingParticle*>> areas = MovingParticle::closedRegions2(MovingParticle::vectorize(ap[i]));
 				for (int j = 0; j < areas.size(); ++j)
 				{
 					Snapshot shot((float)iter, 0.0f, areas[j]);
 					closedRegions.push_back(shot);
-				}
+				}*/
+				vector<MovingParticle*> area = extractClosedPolygon(ap[i], ap[i]);
+				Snapshot shot((float)iter, 0.0f, area);
+				closedRegions.push_back(shot);
 			}
 		}
 
@@ -197,6 +327,7 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 			MovingParticle::setNeighbors(pnew, qnew, pn, mf, p->getFront());
 			qnew->calculateVelocityR();
 			pnew->calculateVelocityR();
+			MovingParticle::updatePolygon(pnew);
 			particles.first = pnew;
 		}
 		{ //from p to r
@@ -208,7 +339,8 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 			MovingParticle::setNeighbors(pnew, pr, qnew, p->getRear(), mf);
 			qnew->calculateVelocityR();
 			pnew->calculateVelocityR();
-			particles.second= pnew;
+			MovingParticle::updatePolygon(pnew);
+			particles.second = pnew;
 		}
 		factory.inactivate(p);
 	}

@@ -184,7 +184,6 @@
     <ClCompile Include="..\src\MiscGeometry.cpp" />
     <ClCompile Include="..\src\MovingParticle.cpp" />
     <ClCompile Include="..\src\OffsetPolygonDAGBuilder.cpp" />
-    <ClCompile Include="..\src\SkeletonDAG.cpp" />
     <ClCompile Include="..\src\Snapshot.cpp" />
     <ClCompile Include="..\src\szConvexHull2D.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
