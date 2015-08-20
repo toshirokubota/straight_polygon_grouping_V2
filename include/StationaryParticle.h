@@ -28,6 +28,8 @@ private:
 	{
 		this->p = p;
 		id = i;
+		link = NULL;
+		info = -1;
 	}
 
 	CParticleF p;

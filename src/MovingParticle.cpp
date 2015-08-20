@@ -135,7 +135,7 @@ MovingParticle::frontPropAngle(MovingParticle* p, MovingParticle* q)
 vector<MovingParticle*>
 MovingParticle::vectorize(MovingParticle* start)
 {
-	vector<MovingParticle*> tr;
+	/*vector<MovingParticle*> tr;
 	MovingParticle* p = start;
 	set<MovingParticle*> pset;
 	bool success = true;
@@ -155,6 +155,43 @@ MovingParticle::vectorize(MovingParticle* start)
 		pset.insert(p);
 		p = p->next;
 	} while (p != start);
+	if (success == false)
+	{
+		printf("failed vectorization data.\n");
+		for (int i = 0; i<tr.size(); ++i)
+		{
+			printf("%d %f %f %d\n", i + 1, tr[i]->p.m_X, tr[i]->p.m_Y, tr[i]->id);
+		}
+		mexErrMsgTxt("vectorize: failed to vectorize a shape.");
+		//tr.clear();
+	}
+	return tr;*/
+	return extractPath(start, start);
+}
+
+vector<MovingParticle*>
+MovingParticle::extractPath(MovingParticle* start, MovingParticle* end)
+{
+	vector<MovingParticle*> tr;
+	MovingParticle* p = start;
+	set<MovingParticle*> pset;
+	bool success = true;
+	do
+	{
+		tr.push_back(p);
+		if (pset.find(p) != pset.end()) //premature loop is found
+		{
+			success = false;
+			break;
+		}
+		if (p->next == NULL)
+		{
+			success = false;
+			break;
+		}
+		pset.insert(p);
+		p = p->next;
+	} while (p != end);
 	if (success == false)
 	{
 		printf("failed vectorization data.\n");
@@ -499,6 +536,8 @@ MovingParticle::findNextSplitEvent() const
 			continue;
 		}*/
 
+		if (init_particle == q->init_particle || init_particle == r->init_particle) continue; //they are technically the same particle.
+
 		//if (eta <= 0) continue;
 		float t0 = intersectSideAndLine(this, q, r); // period - p->time);
 		if (t0 >= 0)
@@ -543,8 +582,12 @@ MovingParticle::findNextSplitEvent(const vector<MovingParticle*>& vp) const
 	for (int j = 0; j<vp.size(); ++j)
 	{
 		const MovingParticle* q = vp[j];
+		if (id == 532 && q->id == 487)
+			j += 0;
 		const MovingParticle* r = q->next;
 		if (this == q || this->next == q || this == r || this->prev == r) continue;
+		if (init_particle == q->init_particle || init_particle == r->init_particle) continue; //they are technically the same particle.
+
 		float t0 = intersectSideAndLine(this, q, r); // period - p->time);
 		if (t0 >= 0)
 		{

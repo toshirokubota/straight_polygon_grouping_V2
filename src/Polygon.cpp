@@ -1,5 +1,16 @@
 #include <Polygon.h>
 #include <MovingParticle.h>
+#include <mex.h>
+
+void
+Polygon::print()
+{
+	printf("Polygon %d:\n", id);
+	for (int i = 0; i < particles.size(); ++i)
+	{
+		particles[i]->print();
+	}
+}
 
 vector<CParticleF>
 Polygon::project(float time)

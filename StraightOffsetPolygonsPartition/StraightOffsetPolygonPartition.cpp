@@ -26,32 +26,11 @@ using namespace std;
 #include <IntersectionConvexPolygons.h>
 #include <GraphFactory.h>
 #include <MovingParticle.h>
-#include <ParticleSimulatorGreedy.h>
+#include <ParticleSimulatorGreedyPartition.h>
 
 int MovingParticle::_id = 0;
 int Polygon::_id = 0;
 
-mxArray*
-StoreContours(const vector<vector<CParticleF>>& polygons)
-{
-	const int dims[] = {polygons.size()};
-	mxArray* cell = mxCreateCellArray(1, (mwSize*) dims);
-	for(int i=0; i<polygons.size(); ++i)
-	{
-		int n = polygons[i].size() ;
-		const int dimsC[] = {n, 3};
-		mxArray* ar = mxCreateNumericArray(2, (mwSize*) dimsC, mxSINGLE_CLASS, mxREAL);
-		float* p = (float*) mxGetData(ar);
-		for(int j=0; j<n; ++j)
-		{
-			p[j] = polygons[i][j].m_X;
-			p[n+j] = polygons[i][j].m_Y;
-			p[2*n+j] = polygons[i][j].m_Z;
-		}
-		mxSetCell(cell, i, ar);
-	}
-	return cell;
-}
 
 vector<pair<int,int>>
 indices2pairs(vector<int> T, const int* dims)
@@ -67,72 +46,6 @@ indices2pairs(vector<int> T, const int* dims)
 	return pairs;
 }
 
-/*
-Returns true if Polygon A contains Polygon B.
-*/
-bool
-contains(vector<CParticleF>& a,  vector<CParticleF>& b)
-{
-	for (int i = 0; i < b.size(); ++i)
-	{
-		if (contained(b[i], a) == false) return false;
-	}
-	if (polygonArea(a) > polygonArea(b)) return true;
-	else return false;
-}
-
-vector<int>
-rankPolygons(vector<Polygon*>& polygons)
-{
-	GraphFactory<Polygon*>& factory = GraphFactory<Polygon*>::GetInstance();
-	vector<Vertex<Polygon*>*> vertices;
-	vector<Edge<Polygon*>*> edges;
-	vector<vector<CParticleF>> boundaries;
-	map<Polygon*, int> pmap;
-	for (int i = 0; i < polygons.size(); ++i)
-	{
-		boundaries.push_back(polygons[i]->original());
-		pmap[polygons[i]] = i;
-	}
-
-	for (int i = 0; i < polygons.size(); ++i)
-	{
-		vertices.push_back(factory.makeVertex(polygons[i]));
-	}
-	for (int i = 0; i < polygons.size(); ++i)
-	{
-		for (int j = 0; j < polygons.size(); ++j)
-		{
-			if (polygons[i] == polygons[j]) continue;
-			if (contains(boundaries[i], boundaries[j]))
-			{
-				Edge<Polygon*>* edge = factory.makeEdge(vertices[i], vertices[j], 1.0f);
-				edges.push_back(edge);
-				vertices[i]->aList.push_back(edge);
-			}
-		}
-	}
-	vector<int> rank(vertices.size(), 0);
-	while (true)
-	{
-		bool bChanged = false;
-		for (int i = 0; i < vertices.size(); ++i)
-		{
-			for (int j = 0; j < vertices[i]->aList.size(); ++j)
-			{
-				int k = pmap[vertices[i]->aList[j]->v->key];
-				if (rank[k] <= rank[i])
-				{
-					rank[k] = rank[i] + 1;
-					bChanged = true;
-				}
-			}
-		}
-		if (bChanged == false) break;
-	}
-	return rank;
-}
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 	printf("%s: This build was compiled at %s %s\n", "StraightMedialAxis", __DATE__, __TIME__);
@@ -141,7 +54,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		mexErrMsgTxt("Usage: [X Y] = StraightMedialAxis(P, [iter delta])");
 		return;
 	}
-	ParticleSimulatorGreedy simulator;
+	ParticleSimulatorGreedyPartition simulator;
 	//Points
 	vector<StationaryParticle*> points;
 	const int* dimsP;

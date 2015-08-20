@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <ClCompile Include="..\src\ContourEQW.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\szConvexHull2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\szMexUtility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -10,30 +16,48 @@
     <ClCompile Include="..\src\szMyNeighborOp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Kmeans.cpp">
+    <ClCompile Include="..\src\IntersectionConvexPolygons.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\EMGaussian.cpp">
+    <ClCompile Include="..\include\EventStruct.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\MovingParticle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Covariance.cpp">
+    <ClCompile Include="..\src\MiscGeometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Triangulation.cpp">
+    <ClCompile Include="..\src\EventStruct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\TriangulateBourke.cpp">
+    <ClCompile Include="..\src\ParticleSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\FloydWarshall.cpp">
+    <ClCompile Include="..\src\Snapshot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GraphThinningTest.cpp">
+    <ClCompile Include="..\src\PolygonDAG.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Polygon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\ParticleSimulatorGreedy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StraightOffsetPolygonPartition.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleSimulatorGreedyPartition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mexFileIO.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\szConvexHull2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\szMexUtility.h">
@@ -51,34 +75,37 @@
     <ClInclude Include="..\include\szParticleF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Kmeans.h">
+    <ClInclude Include="..\include\MiscGeometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\GaussianDistribution.h">
+    <ClInclude Include="..\include\MovingParticle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\DisjointSet.h">
+    <ClInclude Include="..\include\ParticleSimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Feature.h">
+    <ClInclude Include="..\include\Snapshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\EMGaussian.h">
+    <ClInclude Include="..\include\ParticleDirection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Covariance.h">
+    <ClInclude Include="..\include\MovingFront.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Graph.h">
+    <ClInclude Include="..\include\Polygon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\GraphFactory.h">
+    <ClInclude Include="..\include\PolygonDAG.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\FloydWarshall.h">
+    <ClInclude Include="..\include\StationaryParticle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Dijkstra.h">
+    <ClInclude Include="..\include\ParticleSimulatorGreedy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSimulatorGreedyPartition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

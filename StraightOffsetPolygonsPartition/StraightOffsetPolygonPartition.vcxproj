@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3B5A8D60-69BC-4EA4-9E30-2C326E294E4F}</ProjectGuid>
-    <RootNamespace>EMGClustering</RootNamespace>
+    <ProjectGuid>{A861D1F0-8F52-4825-A400-476B88680455}</ProjectGuid>
+    <RootNamespace>StraightOffsetPolygonPartition</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectName>EMGClustering</ProjectName>
+    <ProjectName>StraightOffsetPolygonPartition</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -94,7 +94,7 @@
     <Link>
       <AdditionalOptions>/export:"mexFunction" %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>libmx.lib;libmat.lib;libmex.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>C:\Users\kubota\Documents\MATLAB\Summer2015\AnimalMotion\$(ProjectName).dll</OutputFile>
+      <OutputFile>C:\Users\kubota\Documents\MATLAB\Dots\$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>C:\Program Files (x86)\MATLAB\R2011b\extern\lib\win32\microsoft;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -177,34 +177,43 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Covariance.cpp" />
-    <ClCompile Include="..\src\EMGaussian.cpp" />
-    <ClCompile Include="..\src\FloydWarshall.cpp" />
-    <ClCompile Include="..\src\Kmeans.cpp" />
+    <ClCompile Include="..\include\EventStruct.h" />
+    <ClCompile Include="..\src\ContourEQW.cpp" />
+    <ClCompile Include="..\src\EventStruct.cpp" />
+    <ClCompile Include="..\src\IntersectionConvexPolygons.cpp" />
+    <ClCompile Include="..\src\MiscGeometry.cpp" />
+    <ClCompile Include="..\src\MovingParticle.cpp" />
+    <ClCompile Include="..\src\ParticleSimulator.cpp" />
+    <ClCompile Include="..\src\ParticleSimulatorGreedy.cpp" />
+    <ClCompile Include="..\src\Polygon.cpp" />
+    <ClCompile Include="..\src\PolygonDAG.cpp" />
+    <ClCompile Include="..\src\Snapshot.cpp" />
+    <ClCompile Include="..\src\szConvexHull2D.cpp" />
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="..\src\TriangulateBourke.cpp" />
-    <ClCompile Include="..\src\Triangulation.cpp" />
-    <ClCompile Include="GraphThinningTest.cpp" />
+    <ClCompile Include="ParticleSimulatorGreedyPartition.cpp" />
+    <ClCompile Include="StraightOffsetPolygonPartition.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\Covariance.h" />
-    <ClInclude Include="..\include\Dijkstra.h" />
-    <ClInclude Include="..\include\DisjointSet.h" />
-    <ClInclude Include="..\include\EMGaussian.h" />
-    <ClInclude Include="..\include\Feature.h" />
-    <ClInclude Include="..\include\FloydWarshall.h" />
-    <ClInclude Include="..\include\GaussianDistribution.h" />
-    <ClInclude Include="..\include\Graph.h" />
-    <ClInclude Include="..\include\GraphFactory.h" />
-    <ClInclude Include="..\include\Kmeans.h" />
     <ClInclude Include="..\include\mexFileIO.h" />
+    <ClInclude Include="..\include\MiscGeometry.h" />
+    <ClInclude Include="..\include\MovingFront.h" />
+    <ClInclude Include="..\include\MovingParticle.h" />
+    <ClInclude Include="..\include\ParticleDirection.h" />
+    <ClInclude Include="..\include\ParticleSimulator.h" />
+    <ClInclude Include="..\include\ParticleSimulatorGreedy.h" />
+    <ClInclude Include="..\include\Polygon.h" />
+    <ClInclude Include="..\include\PolygonDAG.h" />
+    <ClInclude Include="..\include\Snapshot.h" />
+    <ClInclude Include="..\include\StationaryParticle.h" />
+    <ClInclude Include="..\include\szConvexHull2D.h" />
     <ClInclude Include="..\include\szMexUtility.h" />
     <ClInclude Include="..\include\szmexutilitytemplate.h" />
     <ClInclude Include="..\include\szMiscOperations.h" />
     <ClInclude Include="..\include\szMyNeighborOp.h" />
     <ClInclude Include="..\include\szParticleF.h" />
+    <ClInclude Include="ParticleSimulatorGreedyPartition.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

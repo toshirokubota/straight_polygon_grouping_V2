@@ -1,0 +1,47 @@
+TriangulationClustering.cpp
+Use triangulation dag to cluster points.
+
+
+RegionPartition.cpp:
+Use the same algorithm from the nodule segmentation in 2D.
+The approach did not quite work well when the seed is at an overlap region of 
+convex parts (try the cherries with inside the stems).
+
+RegionPartitionV2.cpp:
+Use the trace-up along the gradient direction. Only one path is chosen for each 
+boundary point.
+
+PointsClusteringV1.cpp:
+Use the trace-up along the gradient direction on the set of boundary points 
+in the triangulation. No initial trace-down is done.
+
+PointsClusteringV2.cpp:
+Use the trace-up along the steepest ascent directions on the set of boundary points 
+in the triangulation. No initial trace-down is done.
+This version considers multiple paths. Each convergent path is labeled according to the 
+label of the convergent clusters. Each boundary point has a vector of labels to give the
+complete list of convergent clusters.
+
+PointsClusteringV3.cpp:
+Use the trace-up along an ascent direction on the set of boundary points 
+in the triangulation. The ascent direction is given as the representative position
+among the maximum ascent neighbors. No initial trace-down is done.
+
+SpanningTreeClustering.cpp
+
+
+TrebleBasedClustering.cpp:
+It uses the treble based edge weight computed by TriangulationTrebleGraphV2.cpp in TriangulationEdgeRelaxation 
+(wrongly named project). For each point, Select two edges with largest fitness values. Then, apply 
+connected components with the selected edges.
+
+[2/2/2014]
+SimilarityBasedClustering.cpp:
+This version uses a similarity measure to group adjacent triangles.
+Two triangles are similar if the lengths of their sides are similar and forms a convex quadrilateral.
+
+[8/18/2015]
+Using a convexity measure (area / perimeter), incrementally merge adjacent polygons that gives the 
+largest convexity measure.
+
+

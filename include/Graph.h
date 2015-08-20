@@ -27,6 +27,20 @@ public:
 	{
 		aList.push_back(edge);
 	}
+	bool Remove(Vertex<T>* v)
+	{
+		Edge<T>* e = findEdge(v);
+		if (e != NULL)
+		{
+			std::vector<Edge<T>*>::iterator it = find(aList.begin(), aList.end(), e);
+			aList.erase(it);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 
 	Edge<T>* findEdge(Vertex<T>* v)
 	{

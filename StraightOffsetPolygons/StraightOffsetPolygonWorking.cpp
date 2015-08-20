@@ -169,11 +169,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 
 		float initTime = 0.01f;
-		if (nrhs >= 6)
+		/*if (nrhs >= 6)
 		{
 			mxClassID classMode;
 			ReadScalar(initTime, prhs[5], classMode);
-		}
+		}*/
 		simulator.Prepare(points, E, initTime);
 	}
 	float endtime = 2.0f;

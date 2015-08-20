@@ -77,6 +77,10 @@ public:
 	bool updateEvent();
 	bool initializeVelocity();
 	bool calculateVelocityR();
+	void clearVelocity()
+	{
+		v[0] = v[1] = 0.0f;
+	}
 	pair<MovingParticle*, MovingParticle*> applyEvent();
 	vector<float> dump2vector(); //store the current state as a vector of float 
 	EventStruct findNextEdgeEvent() const;
@@ -101,6 +105,7 @@ public:
 		p->front = front;
 	}
 	static vector<MovingParticle*> vectorize(MovingParticle* p);
+	static vector<MovingParticle*> extractPath(MovingParticle* p, MovingParticle* q);
 	static bool updatePolygon(MovingParticle* p);
 	static MovingParticle* getNextEvent();
 	static vector<MovingParticle*> getNextEvents(float eps = 1.0e-6);
@@ -193,7 +198,7 @@ struct ParticleFactory
 		particles.push_back(particle);
 		activeSet.insert(particle);
 		pmap[particle->id] = particle;
-		if (particle->id == 433)
+		if (particle->id == 4835)
 		{
 			particle->id += 0;
 		}
