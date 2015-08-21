@@ -49,7 +49,7 @@ MovingParticleType int2ParticleType(int i)
 void
 MovingParticle::print(char* tab) const
 {
-	printf("%s%d %3.3f %3.3f %3.3f %3.3f %3.3f %3.3f\n", tab, id, p0.m_X, p0.m_Y, p.m_X, p.m_Y, v[0], v[1]);
+	printf("%s%d %3.3f %3.3f %3.3f %3.3f %3.3f %3.3f %d\n", tab, id, p0.m_X, p0.m_Y, p.m_X, p.m_Y, v[0], v[1], init_particle->getId());
 }
 
 void

@@ -21,9 +21,9 @@ private:
 		length = sqrt(x*x + y*y + z*z);
 		if (norm)
 		{
-			x /= length;
-			y /= length;
-			z /= length;
+			this->x /= length;
+			this->y /= length;
+			this->z /= length;
 		}
 	}
 };

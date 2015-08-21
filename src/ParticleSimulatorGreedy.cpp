@@ -19,6 +19,22 @@ ParticleSimulatorGreedy::makeSplitParticle(EventStruct ev)
 	return f;
 }
 
+/*
+Find a precise location where the edge should be split by a split event.
+*/
+MovingParticle*
+pickCollidingParticle(EventStruct ev)
+{
+	CParticleF c = ev.p->move(ev.t);
+	CParticleF q = ev.q->move(ev.t);
+	CParticleF r = ev.r->move(ev.t);
+	pair<float, float> param = _IntersectConvexPolygon::intersect(ev.p->getP(), c, q, r);
+	float t = param.second;
+
+	if (t < 0.5) return (MovingParticle*) ev.q;
+	else return (MovingParticle*)ev.r;
+}
+
 float
 _fitnessMeasure(vector<CParticleF>& vp, float scale)
 {
@@ -139,7 +155,8 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 	MovingParticle* re = (MovingParticle*)ev.r;
 	if (pe != NULL && qe != NULL && re != NULL)
 	{
-		CParticleF f = makeSplitParticle(ev);
+		//CParticleF f = makeSplitParticle(ev);
+		MovingParticle* f = pickCollidingParticle(ev);
 		vector<MovingParticle*> area;
 		if (left)
 		{
@@ -161,6 +178,10 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 			else
 			{
 				area.push_back(qe);
+				if (f != qe)
+				{
+					area.push_back(f);
+				}
 			}
 		}
 		else
@@ -175,21 +196,6 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 					break;
 				}
 			}
-			/*if (pe->getId() == 56)
-			{
-				printf("Right Area:\n");
-				ev.print();
-				for (int k = 0; k < area.size(); ++k)
-				{
-					area[k]->print();
-				}
-				printf("Right Trace:\n");
-				vector<MovingParticle*> vp = MovingParticle::vectorize(pe);
-				for (int k = 0; k < vp.size(); ++k)
-				{
-					vp[k]->print();
-				}
-			}*/
 			//for a path from RE to PE, it may be that PE is not a part of the simple path. In such case, the fitness is 0.
 			//if (find(area.begin(), area.end(), pe) == area.end())
 			if (!bFound)
@@ -198,22 +204,20 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 			}
 			else
 			{
+				if (f != re)
+				{
+					area.insert(area.begin(), f);
+				}
 				area.insert(area.begin(), pe);
 			}
 		}
-		bool bfound = false; 
 		vector<CParticleF> vp0;
 		for (int i = 0; i < area.size(); ++i)
 		{
-			if (area[i] == pe)
-			{
-				bfound = true;
-			}
 			vp0.push_back(area[i]->getP());
 		}
-		vp0.push_back(f);
 		float coverage = _getCoverage(area);
-		float scale = Max(1.0f, Distance(f, pe->getP()) * 2);
+		float scale = Max(1.0f, Distance(f->getP(), pe->getP()) * 2);
 		float fit = _fitnessMeasure(vp0, scale);
 		float value = coverage * fit;
 		if (value > fs.value)
@@ -246,6 +250,7 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 	{
 		iter++;
 		FitnessStruct bestFitness;
+		FitnessStruct bestFitness0;
 		MovingParticle* psel = NULL;
 		bool bLeft = true;
 		int count = 0;
@@ -268,19 +273,23 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 				}
 				FitnessStruct fitLeft = computeFitness(ev, true);
 				FitnessStruct fitRight = computeFitness(ev, false);
-				if (p->getId() == 56)
+				if (p->getId() == 89)
 				{
-					//mexErrMsgTxt("Premature exit for debugging.\n");
+					ev.print();
+					printf("%f %f %f %f %f %f\n", 
+						fitLeft.value, fitRight.value, fitLeft.fitness, fitRight.fitness, fitLeft.coverage, fitRight.coverage);
 				}
 				if (fitLeft.value > bestFitness.value)
 				{
 					bestFitness = fitLeft;
+					bestFitness0 = fitRight;
 					psel = p;
 					bLeft = true;
 				}
 				if (fitRight.value > bestFitness.value)
 				{
 					bestFitness = fitRight;
+					bestFitness0 = fitLeft;
 					psel = p;
 					bLeft = false;
 				}
@@ -292,7 +301,8 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 			break;
 
 		//apply the event
-		int np = p->getPolygon()->getNumParticles();
+		//int np = p->getPolygon()->getNumParticles();
+		vector<MovingParticle*> vp0 = MovingParticle::vectorize(p);
 		pair<MovingParticle*,MovingParticle*> pnew = applyEventGreedy(p->getEvent());
 		{
 			vector<Snapshot> shots = Snapshot::TakeSnapshot((float)iter);
@@ -314,8 +324,10 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 				ap = pnew.second;
 				ap2 = pnew.first;
 			}
-			vector<MovingParticle*> area = extractSimplePath(ap, ap);
-			vector<MovingParticle*> area2 = extractSimplePath(ap2, ap2);
+			vector<MovingParticle*> area = extractSimplePath(ap, ap->getPrev());
+			area.push_back(ap->getPrev());
+			vector<MovingParticle*> area2 = extractSimplePath(ap2, ap2->getPrev());
+			area2.push_back(ap2->getPrev());
 			Snapshot shot((float)iter, 0.0f, area);
 			closedRegions.push_back(shot);
 			chosen.push_back(pfactory.makePolygon(area, (float)iter));
@@ -327,7 +339,7 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 				iter, bestFitness.value, bestFitness.fitness, bestFitness.coverage, bestFitness.area.size(), area.size(),
 				bestFitness.bleft ? "Left": "Right");
 			int dc = bestFitness.area.size() - area.size();
-			/*if (Abs(dc)>=2)
+			if (Abs(dc)>=2)
 			{
 				printf("New particles:\n");
 				pnew.first->print();
@@ -337,26 +349,43 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 				printf("Best fitness:\n");
 				for (int j = 0; j < bestFitness.area.size(); ++j)
 				{
-					printf("%d %f %f %d\n", 
-						bestFitness.area[j]->getId(), bestFitness.area[j]->getP0().m_X, 
-						bestFitness.area[j]->getP0().m_Y,  bestFitness.area[j]->getInitParticle()->getId());
+					bestFitness.area[j]->print();
+				}
+				printf("Best fitness0:\n");
+				for (int j = 0; j < bestFitness0.area.size(); ++j)
+				{
+					bestFitness0.area[j]->print();
 				}
 				printf("Area 1:\n");
 				for (int j = 0; j < area.size(); ++j)
 				{
-					printf("%d %f %f %d\n", area[j]->getId(), area[j]->getP0().m_X, 
-						area[j]->getP0().m_Y, area[j]->getInitParticle()->getId());
+					area[j]->print();
 				}
 				printf("Area 2:\n");
 				for (int j = 0; j < area2.size(); ++j)
 				{
-					printf("%d %f %f %d\n", area2[j]->getId(), area2[j]->getP0().m_X,
-						area2[j]->getP0().m_Y, area2[j]->getInitParticle()->getId());
+					area2[j]->print();
 				}
-				//vector<MovingParticle*> area = extractSimplePath(ap, ap);
-				//vector<MovingParticle*> area2 = extractSimplePath(ap2, ap2);
+
+				vector<MovingParticle*> vp1 = MovingParticle::vectorize(ap);
+				vector<MovingParticle*> vp2 = MovingParticle::vectorize(ap2);
+				printf("Trace 0:\n");
+				for (int j = 0; j < vp0.size(); ++j)
+				{
+					vp0[j]->print();
+				}
+				printf("Trace 1:\n");
+				for (int j = 0; j < vp1.size(); ++j)
+				{
+					vp1[j]->print();
+				}
+				printf("Trace 2:\n");
+				for (int j = 0; j < vp2.size(); ++j)
+				{
+					vp2[j]->print();
+				}
 				mexErrMsgTxt("Premature exist.");
-			}*/
+			}
 		}
 
 		//chosen.push_back(p->getPolygon());
@@ -378,13 +407,13 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 		MovingParticle* r = (MovingParticle*)ev.r;
 		MovingParticle* pn = p->getNext();
 		MovingParticle* pr = p->getPrev();
-		StationaryParticle* sp = sfactory.makeParticle(makeSplitParticle(ev));
+		MovingParticle* sp = pickCollidingParticle(ev); // sfactory.makeParticle(makeSplitParticle(ev));
 		{ //from q to p
 			MovingParticle* pnew = factory.makeParticle(p->getInitParticle(), Split, 0.0f);
-			MovingParticle* qnew = factory.makeParticle(sp, Split, 0.0f);
+			MovingParticle* qnew = factory.makeParticle(sp->getInitParticle(), Split, 0.0f);
 			ParticleDirection pd(sp->getP(), p->getP(), true);
 			MovingFront mf(pd);
-			MovingParticle::setNeighbors(qnew, q, pnew, q->getRear(), mf);
+			MovingParticle::setNeighbors(qnew, q, pnew, sp==q ? q->getRear(): q->getFront(), mf);
 			MovingParticle::setNeighbors(pnew, qnew, pn, mf, p->getFront());
 			bool bUnstable = false;
 			if (qnew->calculateVelocityR() == false) bUnstable = true;
@@ -402,10 +431,10 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 		}
 		{ //from p to r
 			MovingParticle* pnew = factory.makeParticle(p->getInitParticle(), Split, 0.0f);
-			MovingParticle* qnew = factory.makeParticle(sp, Split, 0.0f);
+			MovingParticle* qnew = factory.makeParticle(sp->getInitParticle(), Split, 0.0f);
 			ParticleDirection pd(p->getP(), sp->getP(), true);
 			MovingFront mf(pd);
-			MovingParticle::setNeighbors(qnew, pnew, r, mf, r->getRear());
+			MovingParticle::setNeighbors(qnew, pnew, r, mf, sp==r ? r->getFront(): r->getRear());
 			MovingParticle::setNeighbors(pnew, pr, qnew, p->getRear(), mf);
 			bool bUnstable = false;
 			if (qnew->calculateVelocityR() == false) bUnstable = true;
@@ -422,6 +451,14 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 			qnew->print("qnew:");
 		}
 		factory.inactivate(p);
+		if (sp == q)
+		{
+			factory.inactivate(q);
+		}
+		else
+		{
+			factory.inactivate(r);
+		}
 	}
 	/*vector<MovingParticle*> vp1 = extractSimplePath(particles.first, particles.first);
 	vector<MovingParticle*> vp2 = extractSimplePath(particles.second, particles.second);

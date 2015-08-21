@@ -9,13 +9,14 @@ struct FitnessStruct
 		coverage = 0;
 		fitness = 0;
 		bleft = true;
+		f = NULL;
 	}
 	vector<MovingParticle*> area;
 	float fitness;
 	float coverage;
 	float value;
 	bool bleft;
-	CParticleF f;
+	MovingParticle* f;
 };
 
 class ParticleSimulatorGreedy : public ParticleSimulator
