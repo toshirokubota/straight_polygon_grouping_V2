@@ -112,10 +112,17 @@ MovingParticle::dump2vector()
 A reflex particle is non convex one that can split a side of a polygon.
 */
 bool 
-MovingParticle::isReflex() const //check if it is concave (reflexive) that allows splitting of a side;
+MovingParticle::isReflex() //check if it is concave (reflexive) that allows splitting of a side;
 {
 	//return GetVisualAngle2(prev->p.m_X, prev->p.m_Y, next->p.m_X, next->p.m_Y, p.m_X, p.m_Y) <= 0;
-	return this->reflexive <= 0.0f;
+	//return this->reflexive <= 0.0f; ///TK: should 0 be included? 8/28/2015
+	if (reflexive != reflexive)
+	{
+		reflexive = GetVisualAngle2(p.m_X - rear.dir.x, p.m_Y - rear.dir.y,
+			p.m_X + front.dir.x, p.m_Y + front.dir.y,
+			p.m_X, p.m_Y);
+	}
+	return reflexive <= 0.0f;
 }
 
 //find the angle of propagating front p-q.

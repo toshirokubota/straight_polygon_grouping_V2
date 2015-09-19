@@ -7,5 +7,8 @@ public:
 	ParticleSimulatorGreedyPartition() : ParticleSimulatorGreedy()
 	{
 	}
-	virtual bool Simulate(float endtime = 10.0f, float delta = 0.1f, bool bdebug = false);
+	virtual bool Simulate(int maxLevel, float thres, int minLength);
+	virtual bool _PartitionRecusive(MovingParticle* p, int level, float thres, int minLength, int maxLevel);
+	FitnessStruct findNextEventGreedy(vector<MovingParticle*>& particles);
+	virtual FitnessStruct computeFitness(EventStruct ev, bool left);
 };

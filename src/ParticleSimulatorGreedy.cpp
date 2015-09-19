@@ -23,7 +23,7 @@ ParticleSimulatorGreedy::makeSplitParticle(EventStruct ev)
 Find a precise location where the edge should be split by a split event.
 */
 MovingParticle*
-pickCollidingParticle(EventStruct ev)
+ParticleSimulatorGreedy::pickCollidingParticle(EventStruct ev)
 {
 	CParticleF c = ev.p->move(ev.t);
 	CParticleF q = ev.q->move(ev.t);
@@ -36,7 +36,7 @@ pickCollidingParticle(EventStruct ev)
 }
 
 float
-_fitnessMeasure(vector<CParticleF>& vp, float scale)
+ParticleSimulatorGreedy::_fitnessMeasure(vector<CParticleF>& vp, float scale)
 {
 	float area = polygonArea(vp);
 	float maxlen = 0;
@@ -160,7 +160,7 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 		vector<MovingParticle*> area;
 		if (left)
 		{
-			area = extractSimplePath(pe, f);
+			area = extractSimplePath(pe, f->getNext());
 			bool bFound = false;
 			for (int k = 0; k < area.size(); ++k)
 			{
@@ -175,14 +175,10 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 			{
 				area.clear();
 			}
-			else
-			{
-				area.push_back(qe);
-			}
 		}
 		else
 		{
-			area = extractSimplePath(f, pe);
+			area = extractSimplePath(f, pe->getNext());
 			bool bFound = false;
 			for (int k = 0; k < area.size(); ++k)
 			{
@@ -197,10 +193,6 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 			if (!bFound)
 			{
 				area.clear();
-			}
-			else
-			{
-				area.insert(area.begin(), pe);
 			}
 		}
 		vector<CParticleF> vp0;
@@ -217,12 +209,53 @@ ParticleSimulatorGreedy::computeFitness(EventStruct ev, bool left)
 			fs.value = value;
 			fs.fitness = fit;
 			fs.coverage = coverage;
+			fs.p = pe;
 			fs.f = f;
 			fs.area = area;
 			fs.bleft = left;
 		}
 	}
 	return fs;
+}
+
+FitnessStruct
+ParticleSimulatorGreedy::findNextEventGreedy()
+{
+	ParticleFactory& factory = ParticleFactory::getInstance();
+	FitnessStruct bestFitness;
+	for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
+	{
+		MovingParticle* p = *it;
+		if (p->isUnstable()) continue;
+		if (p->isReflex())
+		{
+			p->setEvent(p->findNextSplitEvent(p->getPolygon()->getParticles()));
+			EventStruct ev = p->getEvent();
+			if (ev.q == NULL || ev.r == NULL)
+			{
+				continue;
+			}
+			if (ev.p == ev.q->getPrev() || ev.p == ev.r->getNext())
+			{
+				continue; //q or r is adjacent to p => if we allow this, applyEventGreedy gets complicated.
+			}
+			if (ev.p->getInitParticle() == ev.q->getInitParticle() || ev.p->getInitParticle() == ev.r->getInitParticle())
+			{
+				continue;
+			}
+			FitnessStruct fitLeft = computeFitness(ev, true);
+			FitnessStruct fitRight = computeFitness(ev, false);
+			if (fitLeft.value > bestFitness.value)
+			{
+				bestFitness = fitLeft;
+			}
+			if (fitRight.value > bestFitness.value)
+			{
+				bestFitness = fitRight;
+			}
+		}
+	}
+	return bestFitness;
 }
 
 bool
@@ -241,77 +274,15 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 	while (iter < endtime)
 	{
 		iter++;
-		FitnessStruct bestFitness;
-		FitnessStruct bestFitness0;
-		MovingParticle* psel = NULL;
-		bool bLeft = true;
-		int count = 0;
-		for (set<MovingParticle*>::iterator it = factory.activeSet.begin(); it != factory.activeSet.end(); ++it)
-		{
-			count++;
-			MovingParticle* p = *it;
-			if (p->isUnstable()) continue;
-			if (p->isReflex())
-			{
-				p->setEvent(p->findNextSplitEvent(p->getPolygon()->getParticles()));
-				EventStruct ev = p->getEvent();
-				if (ev.q == NULL || ev.r == NULL)
-				{
-					continue;
-				}
-				if (ev.p->getInitParticle() == ev.q->getInitParticle() || ev.p->getInitParticle() == ev.r->getInitParticle())
-				{
-					continue;
-				}
-				FitnessStruct fitLeft = computeFitness(ev, true);
-				FitnessStruct fitRight = computeFitness(ev, false);
-				/*if (p->getId() == 5008)
-				{
-					ev.print();
-					printf("%f %f %f %f %f %f %d %d\n",
-						fitLeft.value, fitRight.value, fitLeft.fitness, fitRight.fitness, fitLeft.coverage, fitRight.coverage,
-						fitLeft.area.size(), fitRight.area.size());
-					if (iter == 5)
-					{
-						fitLeft = computeFitness(ev, true);
-						fitRight = computeFitness(ev, false);
-						vector<MovingParticle*> vq1 = MovingParticle::extractPath(p, (MovingParticle*)ev.q);
-						vector<MovingParticle*> vq2 = MovingParticle::extractPath((MovingParticle*)ev.r, p);
-						printf("VQ1:\n");
-						for (int k = 0; k<vq1.size(); ++k)
-						{
-							vq1[k]->print();
-						}
-						printf("VQ2:\n");
-						for (int k = 0; k<vq2.size(); ++k)
-						{
-							vq2[k]->print();
-						}
-					}
-				}*/
-				if (fitLeft.value > bestFitness.value)
-				{
-					bestFitness = fitLeft;
-					bestFitness0 = fitRight;
-					psel = p;
-					bLeft = true;
-				}
-				if (fitRight.value > bestFitness.value)
-				{
-					bestFitness = fitRight;
-					bestFitness0 = fitLeft;
-					psel = p;
-					bLeft = false;
-				}
-			}
-		}
-		MovingParticle* p = psel;
+		FitnessStruct bestFitness = findNextEventGreedy();
+		MovingParticle* p = bestFitness.p;
+		bool bLeft = bestFitness.bleft;
+
 		float fvalue = bestFitness.value;
 		if (fvalue <= thres || fvalue != fvalue)
 			break;
 
 		//apply the event
-		//int np = p->getPolygon()->getNumParticles();
 		vector<MovingParticle*> vp0 = MovingParticle::vectorize(p);
 		pair<MovingParticle*,MovingParticle*> pnew = applyEventGreedy(p->getEvent());
 		{
@@ -329,20 +300,14 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 			{
 				ap = pnew.first;
 				ap2 = pnew.second;
-				area = extractSimplePath(ap, ap->getPrev());
-				area.push_back(ap->getPrev());
+				area = extractSimplePath(ap, ap);
 			}
 			else
 			{
 				ap = pnew.second;
 				ap2 = pnew.first;
-				area = extractSimplePath(ap->getNext(), ap);
-				area.push_back(ap);
+				area = extractSimplePath(ap->getNext(), ap->getNext());
 			}
-			//vector<MovingParticle*> area = extractSimplePath(ap, ap->getPrev());
-			//area.push_back(ap->getPrev());
-			//vector<MovingParticle*> area2 = extractSimplePath(ap2, ap2->getPrev());
-			//area2.push_back(ap2->getPrev());
 			Snapshot shot((float)iter, 0.0f, area);
 			closedRegions.push_back(shot);
 			chosen.push_back(pfactory.makePolygon(area, (float)iter));
@@ -366,39 +331,17 @@ ParticleSimulatorGreedy::Simulate(float endtime, float delta, bool bdebug)
 				{
 					bestFitness.area[j]->print();
 				}
-				/*printf("Best fitness0:\n");
-				for (int j = 0; j < bestFitness0.area.size(); ++j)
-				{
-					bestFitness0.area[j]->print();
-				}*/
 				printf("Area 1:\n");
 				for (int j = 0; j < area.size(); ++j)
 				{
 					area[j]->print();
 				}
-				/*printf("Area 2:\n");
-				for (int j = 0; j < area2.size(); ++j)
-				{
-					area2[j]->print();
-				}*/
-
 				vector<MovingParticle*> vp1 = MovingParticle::vectorize(ap);
-				//vector<MovingParticle*> vp2 = MovingParticle::vectorize(ap2);
-				/*printf("Trace 0:\n");
-				for (int j = 0; j < vp0.size(); ++j)
-				{
-					vp0[j]->print();
-				}*/
 				printf("Trace 1:\n");
 				for (int j = 0; j < vp1.size(); ++j)
 				{
 					vp1[j]->print();
 				}
-				/*printf("Trace 2:\n");
-				for (int j = 0; j < vp2.size(); ++j)
-				{
-					vp2[j]->print();
-				}*/
 				mexErrMsgTxt("Premature exist.");
 			}
 		}
@@ -423,6 +366,11 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 		MovingParticle* pn = p->getNext();
 		MovingParticle* pr = p->getPrev();
 		MovingParticle* sp = pickCollidingParticle(ev); // sfactory.makeParticle(makeSplitParticle(ev));
+
+		if (p->getId() == 272)
+		{
+			ev.t += 0;
+		}
 		{ //from p to q
 			MovingParticle* pnew = factory.makeParticle(p->getInitParticle(), Split, 0.0f);
 			MovingParticle* qnew = factory.makeParticle(sp->getInitParticle(), Split, 0.0f);
@@ -441,8 +389,8 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 			}
 			MovingParticle::updatePolygon(pnew);
 			particles.first = pnew;
-			pnew->print("pnew:");
-			qnew->print("qnew:");
+			//pnew->print("pnew:");
+			//qnew->print("qnew:");
 		}
 		{ //from r to p
 			MovingParticle* pnew = factory.makeParticle(p->getInitParticle(), Split, 0.0f);
@@ -462,8 +410,8 @@ ParticleSimulatorGreedy::applyEventGreedy(EventStruct ev)
 			}
 			MovingParticle::updatePolygon(pnew);
 			particles.second = pnew;
-			pnew->print("pnew:");
-			qnew->print("qnew:");
+			//pnew->print("pnew:");
+			//qnew->print("qnew:");
 		}
 		factory.inactivate(p);
 		factory.inactivate(sp);

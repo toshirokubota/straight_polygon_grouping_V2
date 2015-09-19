@@ -180,6 +180,7 @@
     <ClCompile Include="..\include\EventStruct.h" />
     <ClCompile Include="..\src\ContourEQW.cpp" />
     <ClCompile Include="..\src\EventStruct.cpp" />
+    <ClCompile Include="..\src\FrozenSnapshot.cpp" />
     <ClCompile Include="..\src\IntersectionConvexPolygons.cpp" />
     <ClCompile Include="..\src\MiscGeometry.cpp" />
     <ClCompile Include="..\src\MovingParticle.cpp" />
@@ -192,10 +193,11 @@
     <ClCompile Include="..\src\szMexUtility.cpp" />
     <ClCompile Include="..\src\szMiscOperations.cpp" />
     <ClCompile Include="..\src\szMyNeighborOp.cpp" />
-    <ClCompile Include="ParticleSimulatorGreedyPartition.cpp" />
+    <ClCompile Include="ParticleSimulatorGreedyPartitionV2.cpp" />
     <ClCompile Include="StraightOffsetPolygonPartition.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\FrozenSnapshot.h" />
     <ClInclude Include="..\include\mexFileIO.h" />
     <ClInclude Include="..\include\MiscGeometry.h" />
     <ClInclude Include="..\include\MovingFront.h" />

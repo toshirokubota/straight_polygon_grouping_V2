@@ -61,7 +61,7 @@ public:
 	Polygon* getPolygon() const { return polygon; }
 	void setPolygon(Polygon* poly) { polygon = poly; }
 	bool isActive() const { return bActive; }
-	bool isReflex() const; //check if it is concave (reflex) that allows splitting of a side
+	bool isReflex(); //check if it is concave (reflex) that allows splitting of a side
 	bool isLeaf() const { return bLeaf; }
 	bool isUnstable() const { return bUnstable; }
 	void setEvent(EventStruct ev) {event = ev; }
@@ -90,19 +90,19 @@ public:
 	static float frontPropAngle(MovingParticle* p, MovingParticle* q); //find the angle of propagating front p-q.
 	static void setNeighbors(MovingParticle* p, MovingParticle* prev, MovingParticle* next)
 	{
+		setNeighbors(p, prev, next, prev->front, next->rear);
+	}
+	static void setNeighbors(MovingParticle* p, MovingParticle* prev, MovingParticle* next, MovingFront rear, MovingFront front)
+	{
 		p->prev = prev;
 		p->next = next;
 		p->prev->next = p;
 		p->next->prev = p;
-		p->reflexive = GetVisualAngle2(p->prev->p.m_X, p->prev->p.m_Y, p->next->p.m_X, p->next->p.m_Y, p->p.m_X, p->p.m_Y);
-		p->rear = prev->front;
-		p->front = next->rear;
-	}
-	static void setNeighbors(MovingParticle* p, MovingParticle* prev, MovingParticle* next, MovingFront rear, MovingFront front)
-	{
-		setNeighbors(p, prev, next);
 		p->rear = rear;
 		p->front = front;
+		/*p->reflexive = GetVisualAngle2(p->p.m_X - rear.dir.x, p->p.m_Y - p->rear.dir.y,
+			p->p.m_X + p->front.dir.x, p->p.m_Y + p->front.dir.y,
+			p->p.m_X, p->p.m_Y);*/
 	}
 	static vector<MovingParticle*> vectorize(MovingParticle* p);
 	static vector<MovingParticle*> extractPath(MovingParticle* p, MovingParticle* q);
@@ -198,7 +198,7 @@ struct ParticleFactory
 		particles.push_back(particle);
 		activeSet.insert(particle);
 		pmap[particle->id] = particle;
-		if (particle->id == 4835)
+		if (particle->id == 51)
 		{
 			particle->id += 0;
 		}

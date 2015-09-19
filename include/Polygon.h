@@ -24,6 +24,7 @@ public:
 	float getCreatedTime() const { return creation_time; }
 	int getNumParticles() const { return particles.size(); }
 	vector<MovingParticle*> getParticles() const { return particles; }
+	MovingParticle* getParticle(int i) { return (i < particles.size() && i >= 0 ? particles[i] : NULL); }
 	bool contains(StationaryParticle* p) const { return p!=NULL && sset.find(p) != sset.end(); }
 	bool contains(MovingParticle* p) const { return p != NULL && pset.find(p) != pset.end(); }
 	set<MovingParticle*>& getParticleSet() { return pset; }

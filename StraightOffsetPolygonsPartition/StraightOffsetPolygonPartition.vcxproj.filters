@@ -49,7 +49,10 @@
     <ClCompile Include="StraightOffsetPolygonPartition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleSimulatorGreedyPartition.cpp">
+    <ClCompile Include="..\src\FrozenSnapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleSimulatorGreedyPartitionV2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -106,6 +109,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ParticleSimulatorGreedyPartition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\FrozenSnapshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

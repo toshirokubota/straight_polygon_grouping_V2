@@ -10,7 +10,9 @@ struct FitnessStruct
 		fitness = 0;
 		bleft = true;
 		f = NULL;
+		p = NULL;
 	}
+	MovingParticle* p;
 	vector<MovingParticle*> area;
 	float fitness;
 	float coverage;
@@ -26,8 +28,11 @@ public:
 	{
 	}
 	virtual bool Simulate(float endtime = 10.0f, float delta = 0.1f, bool bdebug = false);
+	float _fitnessMeasure(vector<CParticleF>& vp, float scale);
+	FitnessStruct findNextEventGreedy();
 	pair<MovingParticle*, MovingParticle*> applyEventGreedy(EventStruct ev);
-	FitnessStruct computeFitness(EventStruct ev, bool left);
+	virtual FitnessStruct computeFitness(EventStruct ev, bool left);
+	MovingParticle* pickCollidingParticle(EventStruct ev);
 	float _getCoverage(vector<MovingParticle*>& area);
 	vector<Polygon*> chosen;
 	set<StationaryParticle*> covered;

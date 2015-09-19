@@ -31,7 +31,6 @@ using namespace std;
 int MovingParticle::_id = 0;
 int Polygon::_id = 0;
 
-
 vector<pair<int,int>>
 indices2pairs(vector<int> T, const int* dims)
 {
@@ -45,6 +44,327 @@ indices2pairs(vector<int> T, const int* dims)
 	}
 	return pairs;
 }
+
+vector<StationaryParticle*>
+collectStationaryParticles(Polygon* P)
+{
+	vector<StationaryParticle*> particles;
+	for (int i = 0; i < P->getNumParticles(); ++i)
+	{
+		particles.push_back(P->getParticle(i)->getInitParticle());
+	}
+	return particles;
+}
+
+vector<CParticleF>
+MovingParticles2CParticleF(vector<MovingParticle*>& sp)
+{
+	vector<CParticleF> cp(sp.size());
+	for (int i = 0; i < sp.size(); ++i)
+	{
+		cp[i] = sp[i]->getP();
+	}
+	return cp;
+}
+
+/*
+Two polygons can be merged if they share common sides and one is not completely enclosed inside the other.
+*/
+bool
+checkMergable(Polygon* P, Polygon* Q)
+{
+	set<StationaryParticle*> sP = P->getStationaryParticleSet();
+	set<StationaryParticle*> sQ = Q->getStationaryParticleSet();
+
+	//check for degenerate cases [no overlap, complete inclusion of one by the other]
+	set<StationaryParticle*> iset;
+	set_intersection(sP.begin(), sP.end(),
+		sQ.begin(), sQ.end(),
+		std::inserter(iset, iset.begin()));
+	if (iset.size()<2) return false;
+	set<StationaryParticle*> dset1;
+	set_difference(sP.begin(), sP.end(),
+		sQ.begin(), sQ.end(),
+		std::inserter(dset1, dset1.begin()));
+	if (dset1.empty()) return false;
+	set<StationaryParticle*> dset2;
+	set_difference(sQ.begin(), sQ.end(),
+		sP.begin(), sP.end(),
+		std::inserter(dset2, dset2.begin()));
+	if (dset2.empty()) return false;
+
+	return true;
+}
+
+
+template<class T>
+vector<Vertex<T>*>
+shortestHops(Vertex<T>* u, Vertex<T>* v)
+{
+	vector<Vertex<T>*> Q(1, u);
+	set<Vertex<T>*> S;
+	S.insert(u);
+	u->color = Black;
+	vector<Vertex<T>*> path;
+	bool bfound = false;
+	while (Q.empty() == false && bfound == false)
+	{
+		vector<Vertex<T>*> Q2;
+		for (int i = 0; i < Q.size() && !bfound; ++i)
+		{
+			for (int j = 0; j < Q[i]->aList.size() && !bfound; ++j)
+			{
+				Vertex<T>* w = Q[i]->aList[j]->v;
+				if (w->color == White)
+				{
+					Q2.push_back(w);
+					w->color = Black;
+					w->pi = Q[i]->aList[j]->u;
+					S.insert(w);
+				}
+				if (w == v)
+				{
+					bfound = true;
+					Vertex<T>* x = v->pi;
+					while (x != NULL)
+					{
+						path.push_back(x);
+						x = x->pi;
+					}
+				}
+			}
+		}
+		Q = Q2;
+	}
+	//reset touched vertices
+	for (set<Vertex<T>*>::iterator it = S.begin(); it != S.end(); ++it)
+	{
+		(*it)->Reset();
+	}
+	return path;
+}
+
+vector<Vertex<StationaryParticle*>*>
+mergedPolygonGraph(Polygon* P, Polygon* Q)
+{
+	GraphFactory<StationaryParticle*>& factory = GraphFactory<StationaryParticle*>::GetInstance();
+	vector<Vertex<StationaryParticle*>*> G;
+	Polygon* polys[2] = { P, Q };
+	map<StationaryParticle*, Vertex<StationaryParticle*>*> vmap;
+	for (int k = 0; k < 2; ++k)
+	{
+		for (int i = 0; i < polys[k]->getNumParticles(); ++i)
+		{
+			MovingParticle* p = polys[k]->getParticle(i);
+			StationaryParticle* p0 = p->getInitParticle();
+			Vertex<StationaryParticle*>* u = NULL;
+			if (vmap.find(p0) == vmap.end())
+			{
+				u = factory.makeVertex(p0);
+				vmap[p0] = u;
+				G.push_back(u);
+			}
+			else
+			{
+				u = vmap[p0];
+			}
+		}
+	}
+	for (int k = 0; k < 2; ++k)
+	{
+		for (int i = 0; i < polys[k]->getNumParticles(); ++i)
+		{
+			MovingParticle* p = polys[k]->getParticle(i);
+			StationaryParticle* p0 = p->getInitParticle();
+			MovingParticle* q = polys[k]->getParticle((i+1) % polys[k]->getNumParticles());
+			StationaryParticle* q0 = q->getInitParticle();
+			Vertex<StationaryParticle*>* u = vmap[p0];
+			Vertex<StationaryParticle*>* v = vmap[q0];
+			u->Add(factory.makeEdge(u, v));
+			v->Add(factory.makeEdge(v, u));
+		}
+	}
+
+	return G;
+}
+
+vector<StationaryParticle*>
+curveBoundary(vector<Vertex<StationaryParticle*>*>& vertices)
+{
+	vector<CParticleF> pnts;
+	for (int i = 0; i < vertices.size(); ++i)
+	{
+		pnts.push_back(vertices[i]->key->getP());
+	}
+	vector<CParticleF> hull = ConvexHull2D(pnts);
+	vector<Vertex<StationaryParticle*>*> sp;
+	for (int i = 0; i < hull.size(); ++i)
+	{
+		int k = distance(pnts.begin(), find(pnts.begin(), pnts.end(), hull[i]));
+		sp.push_back(vertices[k]);
+	}
+	vector<StationaryParticle*> boundary;
+	for (int i = 0; i < hull.size(); ++i)
+	{
+		Vertex<StationaryParticle*>* u = sp[i];
+		Vertex<StationaryParticle*>* v = sp[(i+1) % hull.size()];
+		vector<Vertex<StationaryParticle*>*> path = shortestHops(u, v);
+		if(path.empty())
+		{
+			boundary.clear();
+			return boundary;
+		}
+		else
+		{
+			for (int j = 0; j < path.size(); ++j)
+			{
+				boundary.push_back(path[j]->key);
+			}
+		}
+	}
+	return boundary;
+}
+
+Polygon*
+mergePolygons(Polygon* P, Polygon* Q)
+{
+	if (clockWise(P->getParticles()) > 0 || clockWise(Q->getParticles()) > 0) return NULL;
+	if (checkMergable(P, Q) == false) return NULL;
+
+	printf("mergePolygons: [%d, %d], [%d, %d]\n",
+		P->getId(), P->getNumParticles(), Q->getId(), Q->getNumParticles());
+
+	vector<Vertex<StationaryParticle*>*> G = mergedPolygonGraph(P, Q);
+	vector<StationaryParticle*> S = curveBoundary(G);
+
+	map<StationaryParticle*, MovingParticle*> pmap;
+	for (int i = 0; i < Q->getNumParticles(); ++i)
+	{
+		pmap[Q->getParticle(i)->getInitParticle()] = Q->getParticle(i);
+	}
+	for (int i = 0; i < P->getNumParticles(); ++i)
+	{
+		pmap[P->getParticle(i)->getInitParticle()] = P->getParticle(i);
+	}
+
+	vector<MovingParticle*> vp;
+	for (int i = 0; i < S.size(); ++i)
+	{
+		vp.push_back(pmap[S[i]]);
+	}
+	GraphFactory<StationaryParticle*>& gfactory = GraphFactory<StationaryParticle*>::GetInstance();
+	gfactory.Clean();
+
+	PolygonFactory& pfactory = PolygonFactory::getInstance();
+	return pfactory.makePolygon(vp, 0.0f);
+}
+
+float
+fitnessMeasure(vector<CParticleF>& vp, float scale)
+{
+	float area = polygonArea(vp);
+	float maxlen = 0;
+	float sum = 0, sum2 = 0;
+	for (int i = 0; i < vp.size(); ++i)
+	{
+		CParticleF p = vp[i];
+		CParticleF q = vp[(i + 1) % vp.size()];
+		//CParticleF r = vp[(i - 1 + vp.size()) % vp.size()];
+		float d = Distance(p, q);
+		maxlen = Max(d, maxlen);
+		sum += d;
+		sum2 += d * d;
+	}
+	//return sqrt(area) / maxlen;
+	//return sqrt(area) / (scale + sum);
+	//return area / (sum2);
+	return sqrt(area) / scale;
+}
+
+
+vector<Snapshot>
+clusterPolygons(vector<Snapshot> regions)
+{
+	struct PolygonPair {
+		Polygon* P;
+		Polygon* Q;
+		Polygon* R;
+		float fitness;
+		bool operator <(PolygonPair& P)
+		{
+			return fitness < P.fitness;
+		}
+	};
+	set<Polygon*> polygons;
+	vector<PolygonPair> pairs;
+	for (int i = 0; i < regions.size(); ++i)
+	{
+		polygons.insert(regions[i].getPolygon());
+		for (int j = i + 1; j < regions.size(); ++j)
+		{
+			Polygon* m = mergePolygons(regions[i].getPolygon(), regions[j].getPolygon());
+			if (m != NULL)
+			{
+				PolygonPair pa;
+				pa.P = regions[i].getPolygon();
+				pa.Q = regions[j].getPolygon();
+				pa.R = m;
+				vector<CParticleF> mp = MovingParticles2CParticleF(m->getParticles());
+				pa.fitness = fitnessMeasure(mp, 1.0);
+				pairs.push_back(pa);
+			}
+		}
+	}
+	sort(pairs.begin(), pairs.end());
+
+	vector<Snapshot> clusters;
+	while (pairs.size()>0 && (pairs.end() - 1)->fitness > 0)
+	{
+		Polygon* P = (pairs.end() - 1)->P;
+		Polygon* Q = (pairs.end() - 1)->Q;
+		Polygon* R = (pairs.end() - 1)->R;
+		if (P->getId() == 99 && Q->getId()==412)
+		{
+			P->print();
+			Q->print();
+			R->print();
+			mexErrMsgTxt("for debugging...");
+		}
+		Snapshot shot(0.0, 0.0, R->getParticles());
+		clusters.push_back(shot);
+		polygons.insert(R);
+
+		//erase pairs that involve P and Q
+		for (int i = pairs.size() - 1; i >= 0; i--)
+		{
+			if (pairs[i].P->getId() == P->getId() || pairs[i].P->getId() == Q->getId() ||
+				pairs[i].Q->getId() == P->getId() || pairs[i].Q->getId() == Q->getId())
+			{
+				pairs.erase(pairs.begin() + i);
+			}
+		}
+		polygons.erase(polygons.find(P));
+		polygons.erase(polygons.find(Q));
+		for (set<Polygon*>::iterator it = polygons.begin(); it != polygons.end(); ++it)
+		{
+			Polygon* S = *it;
+			Polygon* m = mergePolygons(R, S);
+			if (m != NULL)
+			{
+				PolygonPair pa;
+				pa.P = R;
+				pa.Q = S;
+				pa.R = m;
+				vector<CParticleF> mp = MovingParticles2CParticleF(m->getParticles());
+				pa.fitness = fitnessMeasure(mp, 1.0f);
+				pairs.push_back(pa);
+			}
+		}
+		sort(pairs.begin(), pairs.end());
+	}
+	return clusters;
+}
+
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -89,33 +409,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}*/
 		simulator.Prepare(points, E, initTime);
 	}
-	float endtime = 2.0f;
+	int maxLevel = 10;
 	if (nrhs >= 3)
 	{
 		mxClassID classMode;
-		ReadScalar(endtime, prhs[2], classMode);
+		ReadScalar(maxLevel, prhs[2], classMode);
 	}
-	float delta = 0.1f;
+	float thres = 0.1f;
 	if (nrhs >= 4)
 	{
 		mxClassID classMode;
-		ReadScalar(delta, prhs[3], classMode);
+		ReadScalar(thres, prhs[3], classMode);
 	}
-	bool bdebug = false;
+	int minLength = 3;
 	if (nrhs >= 5)
 	{
 		mxClassID classMode;
-		ReadScalar(bdebug, prhs[4], classMode);
+		ReadScalar(minLength, prhs[4], classMode);
 	}
 
-	try 
-	{
-		simulator.Simulate(endtime, delta, bdebug);
-	}
-	catch (exception ex)
-	{
-		mexErrMsgTxt("0. Exception in ParticleSimulator::Simulate");
-	}
+	simulator.Simulate(maxLevel, thres, minLength);
+
 	if (nlhs >= 1) 
 	{
 		plhs[0] = Snapshot::StoreSnapshots(simulator.snapshots);
@@ -136,13 +450,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	if (nlhs >= 5)
 	{
-		plhs[4] = Snapshot::StoreSnapshots(simulator.traces);
-		//plhs[3] = simulator.SaveDoneEvents();
+		vector<Snapshot> clusters = clusterPolygons(simulator.closedRegions);
+		plhs[4] = Snapshot::StoreSnapshots(clusters);
+		//plhs[4] = Snapshot::StoreSnapshots(simulator.traces);
 	}
 	if (nlhs >= 6)
 	{
-		//vector<Snapshot> snapshots = simulator.closedRegions;
-		//plhs[5] = Snapshot::StoreSnapshots(snapshots);
 		plhs[5] = simulator.SaveDoneEvents();
 	}
 

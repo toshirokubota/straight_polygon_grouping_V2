@@ -66,34 +66,29 @@ bool
 ParticleSimulatorGreedyPartition::_PartitionRecusive(MovingParticle* p0, int level,
 													float thres, int minLength, int maxLevel)
 {
-	if (p0->isActive() == false) return;
-	if (level > maxLevel) return;
+	if (p0->isActive() == false) return false;
+	//if (level > maxLevel) return false;
 
 	vector<MovingParticle*> particles = MovingParticle::vectorize(p0);
 	Snapshot shot(level, 0.0f, particles);
 	snapshots.push_back(shot);
-	if (particles.size() < minLength) return;
 
 	vector<MovingParticle*> area = extractSimplePath(p0, p0);
-	for (int j = 0; j < area.size(); ++j)
-	{
-	//	covered.insert(area[j]->getInitParticle());
-	}
-	if (area.size() >= 3)
-	{
-		Snapshot shot2(level, 0.0f, area);
-		closedRegions.push_back(shot2);
-	}
 
 	FitnessStruct bestFitness = findNextEventGreedy(particles);
 	bool bLeft = bestFitness.bleft;
 	MovingParticle* p = bestFitness.p;
 	float fvalue = bestFitness.value;
 	
-	if (fvalue < thres || fvalue != fvalue)
+	if (fvalue < thres || fvalue != fvalue || particles.size() < minLength || level > maxLevel)
 	{
-		printf("fvalue = %f. Done.\n", fvalue);
-		return;
+		//printf("fvalue = %f. Done.\n", fvalue);
+		if (area.size() >= 3)
+		{
+			Snapshot shot2(level, 0.0f, area);
+			closedRegions.push_back(shot2);
+		}
+		return false;
 	}
 	else
 	{
@@ -109,7 +104,9 @@ ParticleSimulatorGreedyPartition::_PartitionRecusive(MovingParticle* p0, int lev
 		{
 			MovingParticle* ap = i == 0 ? pnew[i] : pnew[i]->getNext();
 			printf("_PartitionRecursive: %d %d %d %f\n", closedRegions.size(), level, i, fvalue);
-			_PartitionRecusive(ap, level + 1, thres, minLength, maxLevel);
+			if (_PartitionRecusive(ap, level + 1, thres, minLength, maxLevel) == false)
+			{
+			}
 		}
 	}
 	return true;
