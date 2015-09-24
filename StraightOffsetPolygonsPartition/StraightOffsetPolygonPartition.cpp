@@ -216,7 +216,7 @@ curveBoundary(vector<Vertex<StationaryParticle*>*>& vertices)
 		}
 		else
 		{
-			for (int j = 0; j < path.size(); ++j)
+			for (int j = path.size() - 1; j >= 0; --j) 
 			{
 				boundary.push_back(path[j]->key);
 			}
@@ -230,9 +230,6 @@ mergePolygons(Polygon* P, Polygon* Q)
 {
 	if (clockWise(P->getParticles()) > 0 || clockWise(Q->getParticles()) > 0) return NULL;
 	if (checkMergable(P, Q) == false) return NULL;
-
-	printf("mergePolygons: [%d, %d], [%d, %d]\n",
-		P->getId(), P->getNumParticles(), Q->getId(), Q->getNumParticles());
 
 	vector<Vertex<StationaryParticle*>*> G = mergedPolygonGraph(P, Q);
 	vector<StationaryParticle*> S = curveBoundary(G);
@@ -259,10 +256,40 @@ mergePolygons(Polygon* P, Polygon* Q)
 	return pfactory.makePolygon(vp, 0.0f);
 }
 
+float 
+fitnessMeasure(vector<MovingParticle*>& vp, float scale)
+{
+	float sum = 0, sum2 = 0;
+	for (int i = 0; i < vp.size(); ++i)
+	{
+		MovingParticle* p = vp[i];
+		MovingParticle* q = vp[(i + 1) % vp.size()];
+		MovingParticle* r = vp[(i - 1 + vp.size()) % vp.size()];
+		CParticleF p0 = p->getP();
+		CParticleF q0 = q->getP();
+		CParticleF r0 = r->getP();
+		if (vp[i]->getNext() != q)
+		{
+			float d = Distance(p0, q0);
+			sum += d * d;
+		}
+		if (vp[i]->getNext() != q || vp[i]->getPrev() != r)
+		{
+			float dx1 = q0.m_X - p0.m_X;
+			float dx2 = p0.m_X - r0.m_X;
+			float dy1 = q0.m_Y - p0.m_Y;
+			float dy2 = p0.m_Y - r0.m_Y;
+			sum2 += (dx1 - dx2)*(dx1 - dx2) + (dy1 - dy2)*(dy1 - dy2);
+		}
+	}
+	return 1.0 / (0.01 + sum + scale * sum2);
+}
+
 float
-fitnessMeasure(vector<CParticleF>& vp, float scale)
+fitnessMeasure0(vector<CParticleF>& vp, float scale)
 {
 	float area = polygonArea(vp);
+	float area2 = polygonArea(ConvexHull2D(vp));
 	float maxlen = 0;
 	float sum = 0, sum2 = 0;
 	for (int i = 0; i < vp.size(); ++i)
@@ -277,8 +304,9 @@ fitnessMeasure(vector<CParticleF>& vp, float scale)
 	}
 	//return sqrt(area) / maxlen;
 	//return sqrt(area) / (scale + sum);
-	//return area / (sum2);
-	return sqrt(area) / scale;
+	//return area * area / (area2 * sum2);
+	//return sqrt(area) / scale;*/
+	return area / ((scale + sqrt(sum2)) * sqrt(area2));
 }
 
 
@@ -309,9 +337,14 @@ clusterPolygons(vector<Snapshot> regions)
 				pa.P = regions[i].getPolygon();
 				pa.Q = regions[j].getPolygon();
 				pa.R = m;
-				vector<CParticleF> mp = MovingParticles2CParticleF(m->getParticles());
-				pa.fitness = fitnessMeasure(mp, 1.0);
+				//vector<CParticleF> mp = MovingParticles2CParticleF(m->getParticles());
+				pa.fitness = fitnessMeasure(m->getParticles(), 1.0);
 				pairs.push_back(pa);
+				printf("mergePolygons: [%d, %d], [%d, %d] => [%d, %d] %f\n",
+					pa.P->getId(), pa.P->getNumParticles(), 
+					pa.Q->getId(), pa.Q->getNumParticles(),
+					pa.R->getId(), pa.R->getNumParticles(),
+					pa.fitness);
 			}
 		}
 	}
@@ -323,13 +356,13 @@ clusterPolygons(vector<Snapshot> regions)
 		Polygon* P = (pairs.end() - 1)->P;
 		Polygon* Q = (pairs.end() - 1)->Q;
 		Polygon* R = (pairs.end() - 1)->R;
-		if (P->getId() == 99 && Q->getId()==412)
+		/*if (P->getId() == 99 && Q->getId()==412)
 		{
 			P->print();
 			Q->print();
 			R->print();
 			mexErrMsgTxt("for debugging...");
-		}
+		}*/
 		Snapshot shot(0.0, 0.0, R->getParticles());
 		clusters.push_back(shot);
 		polygons.insert(R);
@@ -356,8 +389,13 @@ clusterPolygons(vector<Snapshot> regions)
 				pa.Q = S;
 				pa.R = m;
 				vector<CParticleF> mp = MovingParticles2CParticleF(m->getParticles());
-				pa.fitness = fitnessMeasure(mp, 1.0f);
+				pa.fitness = fitnessMeasure(m->getParticles(), 1.0f);
 				pairs.push_back(pa);
+				printf("mergePolygons: [%d, %d], [%d, %d] => [%d, %d] %f\n",
+					pa.P->getId(), pa.P->getNumParticles(),
+					pa.Q->getId(), pa.Q->getNumParticles(),
+					pa.R->getId(), pa.R->getNumParticles(),
+					pa.fitness);
 			}
 		}
 		sort(pairs.begin(), pairs.end());
