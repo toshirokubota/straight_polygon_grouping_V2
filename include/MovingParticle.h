@@ -127,6 +127,7 @@ private:
 	MovingParticle(StationaryParticle* p = NULL, MovingParticleType t = Unknown, float tm = 0.0f)
 	{
 		init_particle = p;
+		init_particle->derived.insert(this);
 		this->p = p->getP();
 		p0 = p->getP();
 		v[0] = v[1] = std::numeric_limits<float>::quiet_NaN();

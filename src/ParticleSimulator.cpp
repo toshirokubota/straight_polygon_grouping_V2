@@ -240,6 +240,8 @@ ParticleSimulator::Prepare(vector<StationaryParticle*>& points, vector<pair<int,
 		vertices[idx.second]->Add(edge2);
 		edges.push_back(edge);
 		edges.push_back(edge2);
+		edge->u->key->neighbors.insert(edge->v->key);
+		edge->v->key->neighbors.insert(edge->u->key);
 	}
 
 	traceForrest(vertices, edges);

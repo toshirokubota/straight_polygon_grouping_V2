@@ -23,6 +23,8 @@ public:
 	int getId() const { return id; }
 	void* link; //generic pointer used in ParticleSimulatorGreedy::extractClosedPolygon().
 	int info; //generic data used in ParticleSimulatorGreedy::extractClosedPolygon().
+	set<StationaryParticle*> neighbors;
+	set<MovingParticle*> derived;
 private:
 	StationaryParticle(CParticleF& p = CParticleF(0, 0, 0), int i=-1)
 	{

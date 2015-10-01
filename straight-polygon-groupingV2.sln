@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StraightOffsetPolygonPartit
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TriangulationClustering", "TriangulationClustering\TriangulationClustering.vcxproj", "{765C480D-D578-43FF-B11D-BE4C55610B35}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PointGroup", "PointGroup\PointGroup.vcxproj", "{06F42A95-16DF-4798-833C-1AA0CE445382}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -95,6 +97,12 @@ Global
 		{765C480D-D578-43FF-B11D-BE4C55610B35}.Release|Win32.ActiveCfg = Release|Win32
 		{765C480D-D578-43FF-B11D-BE4C55610B35}.Release|Win32.Build.0 = Release|Win32
 		{765C480D-D578-43FF-B11D-BE4C55610B35}.Release|x64.ActiveCfg = Release|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Debug|Win32.ActiveCfg = Debug|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Debug|Win32.Build.0 = Debug|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Debug|x64.ActiveCfg = Debug|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Release|Win32.ActiveCfg = Release|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Release|Win32.Build.0 = Release|Win32
+		{06F42A95-16DF-4798-833C-1AA0CE445382}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

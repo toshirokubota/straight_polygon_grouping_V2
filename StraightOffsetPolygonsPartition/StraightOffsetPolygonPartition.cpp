@@ -268,12 +268,13 @@ fitnessMeasure(vector<MovingParticle*>& vp, float scale)
 		CParticleF p0 = p->getP();
 		CParticleF q0 = q->getP();
 		CParticleF r0 = r->getP();
-		if (vp[i]->getNext() != q)
+		if (p->getInitParticle()->neighbors.find(q->getInitParticle()) == p->getInitParticle()->neighbors.end())
 		{
 			float d = Distance(p0, q0);
 			sum += d * d;
 		}
-		if (vp[i]->getNext() != q || vp[i]->getPrev() != r)
+		if (p->getInitParticle()->neighbors.find(q->getInitParticle()) == p->getInitParticle()->neighbors.end() ||
+			p->getInitParticle()->neighbors.find(r->getInitParticle()) == p->getInitParticle()->neighbors.end())
 		{
 			float dx1 = q0.m_X - p0.m_X;
 			float dx2 = p0.m_X - r0.m_X;
@@ -281,8 +282,13 @@ fitnessMeasure(vector<MovingParticle*>& vp, float scale)
 			float dy2 = p0.m_Y - r0.m_Y;
 			sum2 += (dx1 - dx2)*(dx1 - dx2) + (dy1 - dy2)*(dy1 - dy2);
 		}
+
 	}
-	return 1.0 / (0.01 + sum + scale * sum2);
+	vector<CParticleF> vp0 = MovingParticles2CParticleF(vp);
+	float area = polygonArea(vp0);
+	float area2 = polygonArea(ConvexHull2D(vp0));
+	//return 1.0 / (0.01 + sum + scale * sum2) + 1.0 /(1.0 + area2-area);
+	return 1.0 / (0.01 + sum);
 }
 
 float
