@@ -5,6 +5,7 @@
 using namespace std;
 #include <szParticleF.h>
 
+class MovingParticle;
 class StationaryParticleFactory;
 
 class StationaryParticle

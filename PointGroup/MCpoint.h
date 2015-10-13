@@ -31,7 +31,7 @@ public:
          Link[i]=0.5;
    }
 
-   MCpoint(const MCpoint& cp) 
+   /*MCpoint(const MCpoint& cp) 
    {
       Ux=cp.GetVelocityY();
       Uy=cp.GetVelocityX();
@@ -62,9 +62,9 @@ public:
 	  {
 		  SetLink(i, cp.GetLink(i));
 	  }
-   }
+   }*/
    
-   const MCpoint& operator=(const MCpoint& cp) 
+   /*const MCpoint& operator=(const MCpoint& cp) 
    {
       Ux=cp.GetVelocityY();
       Uy=cp.GetVelocityX();
@@ -94,7 +94,7 @@ public:
          SetLink(i,cp.GetLink(i));
       
       return *this;
-   }
+   }*/
    
    /*~MCpoint() {
    }*/
@@ -115,6 +115,18 @@ public:
    inline int GetIndex(int i) const {return Index[i];}
    inline float GetEstimateVelocityY(int i) const {return Vy[i];}
    inline float GetEstimateVelocityX(int i) const {return Vx[i];}
+   pair<float, int> GetDomiantCandidate() {
+	   pair<float, int> result(0.0f, -1);
+	   for (int i = 0; i < Prob.size(); ++i)
+	   {
+		   if (result.first < Prob[i])
+		   {
+			   result.first = Prob[i];
+			   result.second = i < NumCandidates ? Index[i] : -1;
+		   }
+	   }
+	   return result;
+   }
    
    inline void SetEstimateVelocityY(int n, float v) 
    {
@@ -203,11 +215,21 @@ public:
 		   }
 		   //printf(": %f\n", GetLink(i, 0, 0));
 	   }*/
+	   /*printf("Link: ");
+	   for (int i = 0; i < Link.size(); ++i)
+	   {
+		   if (Abs(Link[i] - 0.5) > 0.01)
+		   {
+			   printf("%f, ", Link[i]);
+		   }
+	   }
+	   printf("\n");*/
 	   printf("Velocity Estimates:\n");
 	   for (i = 0; i<GetNumCandidates(); ++i) 
 	   {
 		   printf("%f, %f, %f, %d\n", GetEstimateVelocityX(i), GetEstimateVelocityY(i), GetProb(i), GetIndex(i));
 	   }
+	   printf("Unmatched: %f\n", GetProb(i));
    }
    
  protected:
