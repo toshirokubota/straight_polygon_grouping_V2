@@ -12,14 +12,21 @@
 class LinkedTriple
 {
 public:
-	LinkedTriple(StationaryParticle* p0, StationaryParticle* q0, StationaryParticle* r0)
+	LinkedTriple(StationaryParticle* p0, StationaryParticle* q0, StationaryParticle* r0, int id0)
 	{
 		p = p0;
 		q = q0;
 		r = r0;
 		_setVelocity();
+		fitness = fitnessMeasure();
+		id = id0;
 	}
-
+	float fitnessMeasure()
+	{
+		float d1 = Distance(p->getP(), r->getP());
+		float d2 = Distance(p->getP(), q->getP());
+		return 20.0 / (d1 + d2);
+	}
 	bool _setVelocity()
 	{
 		CParticleF b = bisector(p->getP(), r->getP(), q->getP());
@@ -29,8 +36,8 @@ public:
 	}
 	void print()
 	{
-		printf("(%3.3f, %3.3f) - (%3.3f, %3.3f) - (%3.3f, %3.3f) : (%3.3f, %3.3f)\n",
-			r->getX(), r->getY(), p->getX(), p->getY(), q->getX(), q->getY(), v[0], v[1]);
+		printf("%d (%3.3f, %3.3f) - (%3.3f, %3.3f) - (%3.3f, %3.3f) : (%3.3f, %3.3f), %f, %f\n",
+			id, r->getX(), r->getY(), p->getX(), p->getY(), q->getX(), q->getY(), v[0], v[1], fitness, prob);
 	}
 
 	CParticleF estimate()
@@ -40,7 +47,7 @@ public:
 		CParticleF c;
 		for (int i = 0; i < supporters.size(); ++i)
 		{
-			float f = fitness[i];
+			float f = compatibility[i];
 			if (f > maxFit)
 			{
 				maxFit = f;
@@ -69,7 +76,7 @@ public:
 		LinkedTriple* b = NULL;
 		for (int i = 0; i < supporters.size(); ++i)
 		{
-			float f = fitness[i] * supporters[i]->prob;
+			float f = compatibility[i] * supporters[i]->prob;
 			if (f > maxFit)
 			{
 				maxFit = f * supporters[i]->prob;
@@ -82,19 +89,66 @@ public:
 	StationaryParticle* q; //right
 	StationaryParticle* r; //left
 	float v[2];
+	float fitness;
 	vector<LinkedTriple*> supporters;
 	vector<LinkedTriple*> competitors;
-	vector<float> fitness; //fitenss of each supporter
+	vector<float> compatibility; //fitenss of each supporter
 	float prob;
 	float _prob0; //temporary storage - this will be the prob in the next period
 	float _totalFitness;
-	static const float EPSILON;
+
+	int id;
 };
 
-LinkedTriple* makeNillTriple(StationaryParticle* sp)
+struct LinkedTripleFactory
 {
-	LinkedTriple* t = new LinkedTriple(sp, sp, sp);
-	t->supporters.push_back(t);
-	t->fitness.push_back(LinkedTriple::EPSILON);
-	t->v[0] = t->v[1] = 0.0f;
-}
+public:
+	static LinkedTripleFactory& getInstance()
+	{
+		static LinkedTripleFactory instance;
+		return instance;
+	}
+	LinkedTriple* makeParticle(StationaryParticle* sp, StationaryParticle* sr, StationaryParticle*  sq)
+	{
+		LinkedTriple* triple = new LinkedTriple(sp, sq, sr, _id++);
+		triples.push_back(triple);
+		return triple;
+	}
+	LinkedTriple* makeNillTriple(StationaryParticle* sp)
+	{
+		const float EPSILON = 1.0e-5;
+		LinkedTriple* t = new LinkedTriple(sp, sp, sp, _id++);
+		t->supporters.push_back(t);
+		t->compatibility.push_back(EPSILON);
+		t->v[0] = t->v[1] = 0.0f;
+		t->fitness = 0;
+
+		return t;
+	}
+	void clean()
+	{
+		for (int i = 0; i<triples.size(); ++i)
+		{
+			delete triples[i];
+		}
+		triples.clear();
+		_id = 0;
+	}
+	vector<LinkedTriple*> triples;
+private:
+	int _id;
+	LinkedTripleFactory()
+	{
+		_id = 0;
+	}
+	~LinkedTripleFactory()
+	{
+		clean();
+	}
+	LinkedTripleFactory(LinkedTripleFactory& f){}
+	LinkedTripleFactory operator=(LinkedTripleFactory& f){}
+};
+
+
+
+
