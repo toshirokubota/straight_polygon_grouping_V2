@@ -19,7 +19,7 @@ using namespace std;
 #include <LinkedTriple.h>
 #include <StationaryParticle.h>
 #include <IntersectionConvexPolygons.h>
-
+#include <Triangulation.h>
 
 bool
 isNil(LinkedTriple* t)
@@ -28,22 +28,48 @@ isNil(LinkedTriple* t)
 }
 
 vector<LinkedTriple*>
-collectTriples(vector<CParticleF>& points, float thres, float separation)
+collectTriples(vector<CParticleF>& points, float thres, float scale)
 {
+	Triangulation::Triangulator trmap(points);
+
 	StationaryParticleFactory& factory = StationaryParticleFactory::getInstance();
 	LinkedTripleFactory& tfactory = LinkedTripleFactory::getInstance();
 	vector<StationaryParticle*> particles;
-	for (int i = 0; i < points.size(); ++i)
+	float separation = 0;
+	float margin = 1.0f;
+	for (int i = 0; i < trmap.points.size(); ++i)
 	{
-		CParticleF p = points[i];
-		particles.push_back(factory.makeParticle(p));
+		Triangulation::_Internal::_vertex* p = trmap.points[i];
+		StationaryParticle* sp = factory.makeParticle(p->p);
+		particles.push_back(sp);
+		vector<float> vlen;
+		for (int j = 0; j < p->edges.size(); ++j)
+		{
+			vlen.push_back(p->edges[j]->Length());
+		}
+		sort(vlen.begin(), vlen.end());
+		if (vlen[1] + margin> separation)
+		{
+			separation = vlen[1] + margin;
+		}
 	}
 
 	vector<LinkedTriple*> triples;
 	vector<LinkedTriple*> nils;
-	for (int i = 0; i < points.size(); ++i)
+	for (int i = 0; i < trmap.points.size(); ++i)
 	{
-		CParticleF p = points[i];
+		Triangulation::_Internal::_vertex* tp = trmap.points[i];
+		/*vector<pair<float, Triangulation::_Internal::_vertex*>> pairs;
+		for (int j = 0; j < tp->edges.size(); ++j)
+		{
+			Triangulation::_Internal::_edge* ed = tp->edges[j];
+			Triangulation::_Internal::_vertex* v = ed->vertices[0] == tp ? ed->vertices[1] : ed->vertices[0];
+			pairs.push_back(pair<float, Triangulation::_Internal::_vertex*>(ed->Length(), v));
+		}
+		sort(pairs.begin(), pairs.end());
+		float separation = pairs[1].first * scale; //scale times the second smallest length*/
+
+		CParticleF p = trmap.points[i]->p;
 		StationaryParticle* sp = particles[i];
 		vector<int> neighbors;
 		vector<LinkedTriple*> triples0;
@@ -67,19 +93,12 @@ collectTriples(vector<CParticleF>& points, float thres, float separation)
 				float ang = GetVisualAngle(r.m_X, r.m_Y, q.m_X, q.m_Y, p.m_X, p.m_Y);
 				if (ang > thres)
 				{
-					triples0.push_back(tfactory.makeParticle(sp, sq, sr));
+					triples0.push_back(tfactory.makeTriple(sp, sq, sr));
 				}
 			}
 		}
 		LinkedTriple* nil = tfactory.makeNillTriple(sp);
 		nils.push_back(nil);
-		if (p.m_X > 150 && p.m_X<160 && p.m_Y>70 && p.m_Y<80)
-		{
-			for (int j = 0; j < triples0.size(); ++j)
-			{
-				triples0[j]->print();
-			}
-		}
 
 		//add them as competitors
 		for (int j = 0; j < triples0.size(); ++j)
@@ -131,18 +150,13 @@ assignSupporters(vector<LinkedTriple*>& triples, float thres)
 				float fitness = exp(-df * df / (2.0 * thres/2 * thres/2));
 				t1->supporters.push_back(t2);
 				t1->compatibility.push_back(fitness);
+				t1->linkWeights.push_back(1.0);
 			}
-			/*if (i == 1 && (j==15 || j==17))
-			{
-				printf("%d: (%f, %f)-(%f,%f)-(%f,%f): (%f, %f), (%f, %f), %f, %f\n",
-					j, t2->r->getX(), t2->r->getY(), t2->p->getX(), t2->p->getY(), t2->q->getX(), t2->q->getY(), 
-					t1->v[0], t1->v[1], t2->v[0], t2->v[1], param.first, df);
-			}*/
 		}
 	}
 }
 
-void support(vector<LinkedTriple*>& triples)
+void support(vector<LinkedTriple*>& triples, float thres)
 {
 	for (int i = 0; i < triples.size(); ++i)
 	{
@@ -151,11 +165,12 @@ void support(vector<LinkedTriple*>& triples)
 		for (int j = 0; j < tr->supporters.size(); ++j)
 		{
 			LinkedTriple* tr2 = tr->supporters[j];
-			tr->_totalFitness += tr2->prob * tr->compatibility[j];
-			if (tr->id == 261 || tr->id == 263)
+			tr->_totalFitness += tr2->prob * tr->compatibility[j] * tr->linkWeights[j];
+			/*int k = distance(tr2->supporters.begin(), find(tr2->supporters.begin(), tr2->supporters.end(), tr));
+			if (k < tr2->supporters.size())
 			{
-				printf("F: %d %d %f %f %f\n", tr->id, tr2->id, tr->_totalFitness, tr2->prob, tr->compatibility[j]);
-			}
+				tr->_totalFitness += tr2->prob * tr->compatibility[j] * tr->linkWeights[j] * tr2->linkWeights[k];
+			}*/
 		}
 	}
 	for (int i = 0; i < triples.size(); ++i)
@@ -166,10 +181,6 @@ void support(vector<LinkedTriple*>& triples)
 		{
 			LinkedTriple* tr2 = tr->competitors[j];
 			sum += tr2->prob * tr2->_totalFitness;
-			if (tr->id == 261 || tr->id == 263)
-			{
-				printf("A: %d %d %f %f %f\n", tr->id, tr2->id, sum, tr2->prob, tr2->_totalFitness);
-			}
 		}
 		if (sum >0)
 		{
@@ -184,6 +195,35 @@ void support(vector<LinkedTriple*>& triples)
 	{
 		triples[i]->prob = triples[i]->_prob0;
 	}
+	/*for (int i = 0; i < triples.size(); ++i)
+	{
+		LinkedTriple* t = triples[i];
+		t->linkWeights0.clear();
+		for (int j = 0; j < t->supporters.size(); ++j)
+		{
+			LinkedTriple* t2 = t->supporters[j];
+			int k = distance(t2->supporters.begin(), find(t2->supporters.begin(), t2->supporters.end(), t));
+			if (k >= t2->supporters.size())
+			{
+				t->linkWeights[j] = 0.0f;
+			}
+			else
+			{
+				float dd = t->compatibility[j];
+				float lnk1 = t->linkWeights[j];
+				float lnk2 = t2->linkWeights[k];
+				float pp = t2->prob;
+				float ee = pp*lnk1*lnk2;
+				float pp2 = ee*dd / (ee*dd + (1. - ee)*thres);
+				t->linkWeights0.push_back(pp2);
+			}
+		}
+	}*/
+	/*for (int i = 0; i < triples.size(); ++i)
+	{
+		LinkedTriple* t = triples[i];
+		t->linkWeights = t->linkWeights0;
+	}*/
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -229,73 +269,69 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		ReadScalar(maxSeparation, prhs[3], classMode);
 	}
 
-	vector<LinkedTriple*> triples = collectTriples(points, thres1, maxSeparation);
+	StationaryParticleFactory& spfactory = StationaryParticleFactory::getInstance();
+	vector<LinkedTriple*> triples = collectTriples(points, thres1, 2.0f);
 	assignSupporters(triples, thres2);
 	for (int i = 0; i < numIter; ++i)
 	{
-		support(triples);
+		support(triples, 0.01);
 	}
+
 
 	if (nlhs >= 1)
 	{
-		const int dims[] = { triples.size(), 12 };
+		const int dims[] = { spfactory.particles.size(), 3 };
 		vector<float> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			SetData2(F, i, 0, dims[0], dims[1], triples[i]->p->getX());
-			SetData2(F, i, 1, dims[0], dims[1], triples[i]->p->getY());
-			SetData2(F, i, 2, dims[0], dims[1], triples[i]->r->getX());
-			SetData2(F, i, 3, dims[0], dims[1], triples[i]->r->getY());
-			SetData2(F, i, 4, dims[0], dims[1], triples[i]->q->getX());
-			SetData2(F, i, 5, dims[0], dims[1], triples[i]->q->getY());
-			CParticleF e = triples[i]->estimate();
-			SetData2(F, i, 6, dims[0], dims[1], e.m_X);
-			SetData2(F, i, 7, dims[0], dims[1], e.m_Y);
-			SetData2(F, i, 8, dims[0], dims[1], triples[i]->v[0]);
-			SetData2(F, i, 9, dims[0], dims[1], triples[i]->v[1]);
-			SetData2(F, i, 10, dims[0], dims[1], triples[i]->prob);
-			SetData2(F, i, 11, dims[0], dims[1], triples[i]->fitness);
-			if (triples[i]->p->getX() > 150 && triples[i]->p->getX()<160 && triples[i]->p->getY()>70 && triples[i]->p->getY()<80)
-			{
-				triples[i]->print();
-			}
+			SetData2(F, i, 0, dims[0], dims[1], spfactory.particles[i]->getX());
+			SetData2(F, i, 1, dims[0], dims[1], spfactory.particles[i]->getY());
+			SetData2(F, i, 2, dims[0], dims[1], (float)spfactory.particles[i]->getId());
 		}
 		plhs[0] = StoreData(F, mxSINGLE_CLASS, 2, dims);
 
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { triples.size(), 12 };
+		const int dims[] = { triples.size(), 10 };
 		vector<float> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			LinkedTriple* t = triples[i]->best();
-			if (t == NULL)
-			{
-				for (int j = 0; j < dims[1]; ++j)
-				{
-					SetData2(F, i, j, dims[0], dims[1], std::numeric_limits<float>::quiet_NaN());
-				}
-			}
-			else {
-				SetData2(F, i, 0, dims[0], dims[1], t->p->getX());
-				SetData2(F, i, 1, dims[0], dims[1], t->p->getY());
-				SetData2(F, i, 2, dims[0], dims[1], t->r->getX());
-				SetData2(F, i, 3, dims[0], dims[1], t->r->getY());
-				SetData2(F, i, 4, dims[0], dims[1], t->q->getX());
-				SetData2(F, i, 5, dims[0], dims[1], t->q->getY());
-				CParticleF e = t->estimate();
-				SetData2(F, i, 6, dims[0], dims[1], e.m_X);
-				SetData2(F, i, 7, dims[0], dims[1], e.m_Y);
-				SetData2(F, i, 8, dims[0], dims[1], t->v[0]);
-				SetData2(F, i, 9, dims[0], dims[1], t->v[1]);
-				SetData2(F, i, 10, dims[0], dims[1], t->prob);
-				SetData2(F, i, 11, dims[0], dims[1], t->fitness);
-			}
+			SetData2(F, i, 0, dims[0], dims[1], (float)triples[i]->id);
+			SetData2(F, i, 1, dims[0], dims[1], (float)triples[i]->p->getId());
+			SetData2(F, i, 2, dims[0], dims[1], (float)triples[i]->r->getId());
+			SetData2(F, i, 3, dims[0], dims[1], (float)triples[i]->q->getId());
+			CParticleF e = triples[i]->estimate();
+			SetData2(F, i, 4, dims[0], dims[1], e.m_X);
+			SetData2(F, i, 5, dims[0], dims[1], e.m_Y);
+			SetData2(F, i, 6, dims[0], dims[1], triples[i]->v[0]);
+			SetData2(F, i, 7, dims[0], dims[1], triples[i]->v[1]);
+			SetData2(F, i, 8, dims[0], dims[1], triples[i]->fitness);
+			SetData2(F, i, 9, dims[0], dims[1], triples[i]->prob);
 		}
 		plhs[1] = StoreData(F, mxSINGLE_CLASS, 2, dims);
+	}
+	if (nlhs >= 3)
+	{
+		const int dims[] = { triples.size(), 2 };
+		vector<int> F(dims[0] * dims[1]);
+		for (int i = 0; i < dims[0]; ++i)
+		{
+			LinkedTriple* t = triples[i]->best();
+			SetData2(F, i, 0, dims[0], dims[1], triples[i]->id);
+			if (t == NULL)
+			{
+				SetData2(F, i, 1, dims[0], dims[1], 0);
+			}
+			else {
+				SetData2(F, i, 1, dims[0], dims[1], t->id);
+			}
+		}
+		plhs[2] = StoreData(F, mxINT32_CLASS, 2, dims);
 
 	}
+	StationaryParticleFactory::getInstance().clean();
+	LinkedTripleFactory::getInstance().clean();
 	mexUnlock();
 }
 
