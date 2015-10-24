@@ -99,7 +99,7 @@ LinkedTriple::compatibility(LinkedTriple* t)
 	float uy = v[1] - t->v[1];
 
 
-	float dd = (dx + ux * s) * (dx + ux * s) + (dy + uy * s) + (dy + uy * s);
+	float dd = (dx + ux * s) * (dx + ux * s) + (dy + uy * s) * (dy + uy * s);
 	float sgm = factory.unit;
 	float ee = exp(-dd / (2 * sgm*sgm));
 

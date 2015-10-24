@@ -47,6 +47,7 @@ float calculateScaleUnit(vector<CParticleF>& points)
 void
 perturbePoints(vector<CParticleF>& points, float scale)
 {
+	rndm(12345);
 	for (int i = 0; i < points.size(); ++i)
 	{
 		points[i].m_X += scale * (rndm(0) - 0.5);
@@ -60,7 +61,7 @@ collectTriples(vector<CParticleF>& points, float thres, float scale)
 	StationaryParticleFactory& factory = StationaryParticleFactory::getInstance();
 	LinkedTripleFactory& tfactory = LinkedTripleFactory::getInstance();
 	vector<StationaryParticle*> particles;
-	float separation = tfactory.unit + 1.0f;
+	float separation = scale * tfactory.unit;
 
 	for (int i = 0; i < points.size(); ++i)
 	{
@@ -194,11 +195,13 @@ assignSupporters(vector<LinkedTriple*>& triples, float thres)
 			//pair<float, float>  param = _IntersectConvexPolygon::intersect(p1, p2, q1, q2);
 			//float df = Abs(param.first - param.second);
 			//if (param.first>0 && param.second > 0 && param.first < toobig && param.second<toobig && df < thres)
+			//if (i == 122 && j == 103)
+			//	float cc = t1->compatibility(t2);
 			float comp = t1->compatibility(t2);
-			if (i == 0)
+			if (t1->p->getId() == 25)
 			{
-				printf("%d (%d,%d,%d) vs. %d (%d, %d, %d) => %f\n",
-					t1->id, t1->p->getId(), t1->r->getId(), t1->q->getId(), t2->id, t2->p->getId(), t2->r->getId(), t2->q->getId(), comp);
+				printf("[%d %d] %d (%d,%d,%d) vs. %d (%d, %d, %d) => %f\n",
+					i, j, t1->id, t1->p->getId(), t1->r->getId(), t1->q->getId(), t2->id, t2->p->getId(), t2->r->getId(), t2->q->getId(), comp);
 			}
 			if (comp > thres)
 			{
@@ -318,7 +321,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	float perturbationScale = 0.0f;
 	float thres1 = 0.5;
-	float thres2 = 0.9;
+	float thres2 = 0.8;
 	int numIter = 10;
 	if (nrhs >= 2)
 	{
@@ -338,7 +341,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	perturbePoints(points, perturbationScale);
 	StationaryParticleFactory& spfactory = StationaryParticleFactory::getInstance();
-	vector<LinkedTriple*> triples = collectTriples(points, thres1, 2.0f);
+	vector<LinkedTriple*> triples = collectTriples(points, thres1, 1.25f);
 	assignSupporters(triples, thres2);
 	for (int i = 0; i < numIter; ++i)
 	{
@@ -367,6 +370,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		for (int i = 0; i < dims[0]; ++i)
 		{
 			LinkedTriple* t = factory.triples[i];
+			if (t->p->getId() == 25)
+			{
+				i += 0;
+			}
 			t->updateFate();
 			SetData2(F, i, 0, dims[0], dims[1], (float)t->id);
 			SetData2(F, i, 1, dims[0], dims[1], (float)t->p->getId());
