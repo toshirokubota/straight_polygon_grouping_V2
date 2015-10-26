@@ -127,39 +127,6 @@ collectTriples(vector<CParticleF>& points, float thres, float scale)
 	return triples;
 }
 
-/*#include <CircleFitting.h>
-bool
-circularSupport(LinkedTriple* t, LinkedTriple* s, float time, )
-{
-	vector<CParticleF> vp;
-	vp.push_back(t->r->getP());
-	vp.push_back(t->p->getP());
-	vp.push_back(t->q->getP());
-	vp.push_back(s->r->getP());
-	vp.push_back(s->p->getP());
-	vp.push_back(s->q->getP());
-
-	double radius, cx, cy;
-	if (fitCircle(vp, radius, cx, cy)) {
-		float x = t->p->getX() + t->v[0] * time;
-		float y = t->p->getX() + t->v[0] * time;
-		float dd = (x - cx)*(x - cx) + (y - cy)*(y - cy);
-		if (dd < radius*radius)
-		{
-			return true;
-		}
-		else
-		{
-			return  false;
-		}
-	}
-	else
-	{
-		return false;
-	}
-
-}*/
-
 bool
 circularSupport(LinkedTriple* t, LinkedTriple* s, float time, float thres)
 {
@@ -182,50 +149,40 @@ assignSupporters(vector<LinkedTriple*>& triples, float thres)
 
 		CParticleF p1 = t1->p->getP();
 		CParticleF p2(p1.m_X + t1->v[0], p1.m_Y + t1->v[1]);
-		//vector<pair<float, CParticleF>> vpairs;
 		for (int j = 0; j < triples.size(); ++j)
 		{
 			LinkedTriple* t2 = triples[j];
 			if (t1->p == t2->p) continue;
 			if (LinkedTriple::isNil(t2)) continue;
-			if (circularSupport(t1, t2, t1->_timeToClosestEncounter(t2), 0.5f) == false) continue;
-
-			CParticleF q1 = t2->p->getP();
-			CParticleF q2(q1.m_X + t2->v[0], q1.m_Y + t2->v[1]);
-			//pair<float, float>  param = _IntersectConvexPolygon::intersect(p1, p2, q1, q2);
-			//float df = Abs(param.first - param.second);
-			//if (param.first>0 && param.second > 0 && param.first < toobig && param.second<toobig && df < thres)
-			//if (i == 122 && j == 103)
-			//	float cc = t1->compatibility(t2);
-			float comp = t1->compatibility(t2);
-			if (t1->p->getId() == 25)
+			if (circularSupport(t1, t2, t1->_timeToClosestEncounter(t2), 0.5f))
 			{
+				CParticleF q1 = t2->p->getP();
+				CParticleF q2(q1.m_X + t2->v[0], q1.m_Y + t2->v[1]);
+				float comp = t1->compatibility(t2);
+				/*if (t1->p->getId() == 25)
+				{
 				printf("[%d %d] %d (%d,%d,%d) vs. %d (%d, %d, %d) => %f\n",
-					i, j, t1->id, t1->p->getId(), t1->r->getId(), t1->q->getId(), t2->id, t2->p->getId(), t2->r->getId(), t2->q->getId(), comp);
+				i, j, t1->id, t1->p->getId(), t1->r->getId(), t1->q->getId(), t2->id, t2->p->getId(), t2->r->getId(), t2->q->getId(), comp);
+				}*/
+				if (comp > thres)
+				{
+					t1->frontSupporters.push_back(t2);
+					t1->linkWeights.push_back(1.0);
+				}
 			}
-			if (comp > thres)
+			if (t2->q == t1->p && t2->p == t1->r)
 			{
-				//float fitness = exp(-df * df / (2.0 * thres/2 * thres/2));
-				t1->supporters.push_back(t2);
-				//t1->compatibility.push_back(fitness);
-				t1->linkWeights.push_back(1.0);
-				//CParticleF z(p1.m_X + t1->v[0] * param.first, p1.m_Y + t1->v[1] * param.first);
-				//vpairs.push_back(pair<float, CParticleF>(df, z));
+				t1->leftSupporters.push_back(t2);
+			}
+			if (t2->r == t1->p && t2->p == t1->q)
+			{
+				t1->rightSupporters.push_back(t2);
 			}
 		}
-		/*sort(vpairs.begin(), vpairs.end());
-		if (t1->supporters.size() > 0)
-		{
-			int ns = t1->supporters.size();
-			t1->fate = vpairs[vpairs.size()/2].second;
-		}
-		else
-		{
-			t1->fate = p1;
-		}*/
 	}
 }
 
+/*
 void
 updateFate(vector<LinkedTriple*>& triples)
 {
@@ -233,9 +190,9 @@ updateFate(vector<LinkedTriple*>& triples)
 	{
 		LinkedTriple* t = triples[i];
 		float ex = 0, ey = 0, sump = 0;
-		for (int j = 0; j < t->supporters.size(); ++j)
+		for (int j = 0; j < t->frontSupporters.size(); ++j)
 		{
-			LinkedTriple* s = t->supporters[j];
+			LinkedTriple* s = t->frontSupporters[j];
 			ex += s->prob * (s->fate.m_X - t->fate.m_X);
 			ey += s->prob * (s->fate.m_Y - t->fate.m_Y);
 			sump += s->prob;
@@ -256,17 +213,35 @@ updateFate(vector<LinkedTriple*>& triples)
 		t->fate = t->_fate0;
 	}
 }
+*/
 
 void support(vector<LinkedTriple*>& triples, float thres)
 {
 	for (int i = 0; i < triples.size(); ++i)
 	{
 		LinkedTriple* tr = triples[i];
-		tr->_totalFitness = tr->fitness;
-		for (int j = 0; j < tr->supporters.size(); ++j)
+		float sum1 = 0; // tr->fitness;
+		for (int j = 0; j < tr->frontSupporters.size(); ++j)
 		{
-			LinkedTriple* tr2 = tr->supporters[j];
-			tr->_totalFitness += tr2->prob * tr->compatibility(tr2) * tr->linkWeights[j];
+			LinkedTriple* tr2 = tr->frontSupporters[j];
+			sum1 += tr2->prob * tr->compatibility0(tr2);
+		}
+		float sum2 = 0; // tr->fitness;
+		for (int j = 0; j < tr->leftSupporters.size(); ++j)
+		{
+			LinkedTriple* tr2 = tr->leftSupporters[j];
+			sum2 += tr2->prob; // *tr->compatibility0(tr2);
+		}
+		float sum3 = 0; // tr->fitness;
+		for (int j = 0; j < tr->rightSupporters.size(); ++j)
+		{
+			LinkedTriple* tr2 = tr->rightSupporters[j];
+			sum3 += tr2->prob; // *tr->compatibility0(tr2);
+		}
+		tr->_totalFitness = tr->prob * tr->fitness + pow(sum1*sum2*sum3, 1.0 / 3.0);
+		if (tr->id == 293)
+		{
+			i += 0;
 		}
 	}
 	for (int i = 0; i < triples.size(); ++i)
@@ -286,10 +261,18 @@ void support(vector<LinkedTriple*>& triples, float thres)
 		{
 			tr->_prob0 = 0.0f;
 		}
+		if (tr->id == 293)
+		{
+			i += 0;
+		}
 	}
 	for (int i = 0; i < triples.size(); ++i)
 	{
 		triples[i]->prob = triples[i]->_prob0;
+		if (triples[i]->p->getId() == 5)
+		{
+			triples[i]->print();
+		}
 	}
 }
 
@@ -331,12 +314,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nrhs >= 3)
 	{
 		mxClassID classMode;
-		ReadScalar(numIter, prhs[2], classMode);
+		ReadScalar(thres2, prhs[2], classMode);
 	}
 	if (nrhs >= 4)
 	{
 		mxClassID classMode;
-		ReadScalar(perturbationScale, prhs[3], classMode);
+		ReadScalar(numIter, prhs[3], classMode);
+	}
+	if (nrhs >= 5)
+	{
+		mxClassID classMode;
+		ReadScalar(perturbationScale, prhs[4], classMode);
 	}
 
 	perturbePoints(points, perturbationScale);

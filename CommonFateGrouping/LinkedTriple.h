@@ -18,7 +18,8 @@ public:
 	bool _setVelocity();
 	void print();
 	LinkedTriple* best();
-	float compatibility(LinkedTriple* t);
+	float compatibility0(LinkedTriple* t); //only the distance factor
+	float compatibility(LinkedTriple* t); //include the angle factor
 	float _timeToClosestEncounter(LinkedTriple* t);
 	bool updateFate();
 
@@ -29,7 +30,9 @@ public:
 	float fitness;
 	CParticleF fate;
 	CParticleF _fate0; //temporary storage of an updated fate
-	vector<LinkedTriple*> supporters;
+	vector<LinkedTriple*> frontSupporters;
+	vector<LinkedTriple*> leftSupporters;
+	vector<LinkedTriple*> rightSupporters;
 	vector<LinkedTriple*> competitors;
 	//vector<float> compatibility; //fitenss of each supporter
 	vector<float> linkWeights; //link weight to each supporter
@@ -62,7 +65,6 @@ public:
 		const float EPSILON = 1.0e-5;
 		LinkedTriple* t = new LinkedTriple(sp, sp, sp, _id++);
 		triples.push_back(t);
-		t->supporters.push_back(t);
 		//t->compatibility.push_back(EPSILON);
 		t->linkWeights.push_back(1.0);
 		t->v[0] = t->v[1] = 0.0f;
