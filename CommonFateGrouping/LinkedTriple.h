@@ -13,12 +13,15 @@ class LinkedTriple
 {
 public:
 	LinkedTriple(StationaryParticle* p0, StationaryParticle* q0, StationaryParticle* r0, int id0);
-	static float fitnessMeasure(StationaryParticle* p0, StationaryParticle* q0, StationaryParticle* r0);
+	static float fitnessMeasure(StationaryParticle* p, StationaryParticle* q, StationaryParticle* r);
 	static bool isNil(LinkedTriple* t);
-	bool _setVelocity();
+	static bool calculateVelocity(StationaryParticle* p, StationaryParticle* q, StationaryParticle* r, float& vx, float& vy);
+	static float compatibility(CParticleF& p, float u[], CParticleF& q, float v[]); //include the angle factor
+	static float _timeToClosestEncounter(CParticleF& p, float u[], CParticleF& q, float v[]);
+
 	void print();
 	LinkedTriple* best();
-	float compatibility0(LinkedTriple* t); //only the distance factor
+	//float compatibility0(LinkedTriple* t); //only the distance factor
 	float compatibility(LinkedTriple* t); //include the angle factor
 	float _timeToClosestEncounter(LinkedTriple* t);
 	bool updateFate();
@@ -68,7 +71,7 @@ public:
 		//t->compatibility.push_back(EPSILON);
 		t->linkWeights.push_back(1.0);
 		t->v[0] = t->v[1] = 0.0f;
-		t->fitness = 0;
+		t->fitness = EPSILON;
 
 		return t;
 	}

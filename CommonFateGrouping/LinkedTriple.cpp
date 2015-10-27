@@ -6,7 +6,7 @@ LinkedTriple::LinkedTriple(StationaryParticle* p0, StationaryParticle* q0, Stati
 	p = p0;
 	q = q0;
 	r = r0;
-	_setVelocity();
+	calculateVelocity(p, q, r, v[0], v[1]);
 	fitness = fitnessMeasure(p, q, r);
 	id = id0;
 }
@@ -26,7 +26,7 @@ LinkedTriple::fitnessMeasure(StationaryParticle* p, StationaryParticle* q, Stati
 	float d2 = Distance(p->getP(), q->getP());
 	float df = (d1 - d2) / (factory.unit); 
 	float ang = GetVisualAngle(r->getX(), r->getY(), q->getX(), q->getY(), p->getX(), p->getY());
-	float sn = sin(ang / 2) + 1;
+	float sn = sin(ang / 2);
 	return sn * sn * exp(-df * df / 2.0);
 }
 
@@ -38,13 +38,14 @@ LinkedTriple::isNil(LinkedTriple* t)
 
 
 bool 
-LinkedTriple::_setVelocity()
+LinkedTriple::calculateVelocity(StationaryParticle* p, StationaryParticle* q, StationaryParticle* r, float& vx, float& vy)
 {
 	CParticleF b = bisector(p->getP(), r->getP(), q->getP());
-	v[0] = b.m_X;
-	v[1] = b.m_Y;
+	vx = b.m_X;
+	vy = b.m_Y;
 	return true;
 }
+
 void 
 LinkedTriple::print()
 {
@@ -72,67 +73,46 @@ LinkedTriple::best()
 }
 
 float
-LinkedTriple::_timeToClosestEncounter(LinkedTriple* t)
+LinkedTriple::_timeToClosestEncounter(CParticleF& p, float u[], CParticleF& q, float v[])
 {
-	float dx = p->getX() - t->p->getX();
-	float dy = p->getY() - t->p->getY();
-	float ux = v[0] - t->v[0];
-	float uy = v[1] - t->v[1];
+	float dx = p.m_X - q.m_X;
+	float dy = p.m_Y - q.m_Y;
+	float ux = u[0] - v[0];
+	float uy = u[1] - v[1];
 
 	float lu2 = ux * ux + uy * uy;
 	float s = -(dx * ux + dy * uy) / lu2;
-	if (Abs(s) > 1000)
-	{
-		s += 0;
-	}
 	return s;
 }
 
 float
-LinkedTriple::compatibility0(LinkedTriple* t)
+LinkedTriple::_timeToClosestEncounter(LinkedTriple* t)
 {
-	LinkedTripleFactory& factory = LinkedTripleFactory::getInstance();
-	if (isNil(t)) return 0.0f;
-	float s = _timeToClosestEncounter(t);
-	if (s < 0) return 0.0f;
-
-	float x = p->getX();
-	float y = p->getY();
-	float x2 = t->p->getX();
-	float y2 = t->p->getY();
-	float x0 = x + v[0] * s;
-	float y0 = y + v[1] * s;
-
-	float dx = x - x2;
-	float dy = y - y2;
-	float ux = v[0] - t->v[0];
-	float uy = v[1] - t->v[1];
-
-
-	float dd = (dx + ux * s) * (dx + ux * s) + (dy + uy * s) * (dy + uy * s);
-	float sgm = factory.unit;
-	return exp(-dd / (2 * sgm*sgm));
+	return _timeToClosestEncounter(p->getP(), v, t->p->getP(), t->v);
 }
 
 float
-LinkedTriple::compatibility(LinkedTriple* t)
+LinkedTriple::compatibility(CParticleF& p, float* u, CParticleF& q, float* v)
 {
 	LinkedTripleFactory& factory = LinkedTripleFactory::getInstance();
-	if (isNil(t)) return 0.0f;
-	float s = _timeToClosestEncounter(t);
+	float s = _timeToClosestEncounter(p, u, q, v);
 	if (s < 0) return 0.0f;
+	if (s >= std::numeric_limits<float>::infinity() || s != s)
+	{
+		return 0.0f;
+	}
 
-	float x = p->getX();
-	float y = p->getY();
-	float x2 = t->p->getX();
-	float y2 = t->p->getY();
-	float x0 = x + v[0] * s;
-	float y0 = y + v[1] * s;
+	float x = p.m_X;
+	float y = p.m_Y;
+	float x2 = q.m_X;
+	float y2 = q.m_Y;
+	float x0 = x + u[0] * s;
+	float y0 = y + u[1] * s;
 
 	float dx = x - x2;
 	float dy = y - y2;
-	float ux = v[0] - t->v[0];
-	float uy = v[1] - t->v[1];
+	float ux = u[0] - v[0];
+	float uy = u[1] - v[1];
 
 
 	float dd = (dx + ux * s) * (dx + ux * s) + (dy + uy * s) * (dy + uy * s);
@@ -142,6 +122,12 @@ LinkedTriple::compatibility(LinkedTriple* t)
 	float ang = GetVisualAngle(x, y, x2, y2, x0, y0);
 	float sn = sin(ang / 2.0);
 	return sn * sn  * ee;
+}
+
+float
+LinkedTriple::compatibility(LinkedTriple* t)
+{
+	return compatibility(p->getP(), v, t->p->getP(), t->v);
 }
 
 bool 
