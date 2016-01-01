@@ -470,6 +470,21 @@ float Distance2LineSegment(const CParticleF& p, const CParticleF& q, const CPart
 	}
 }
 
+/*
+compute the closest point from x on the line connecting p and q.
+p and q have to be distinct.
+This is don
+*/
+CParticleF Closest2Line3d(const CParticleF& p, const CParticleF& q, const CParticleF& x)
+{
+	float a = p.m_X;
+	float b = q.m_X - p.m_X;
+	float c = p.m_Y;
+	float d = q.m_Y - p.m_Y;
+	float t = (-a*b - c*d + b*x.m_X + d*x.m_Y) / (b*b + d*d);
+	return CParticleF(a + b*t, c + d*t);
+}
+
 float
 polygonArea(vector<CParticleF>& vp)
 {

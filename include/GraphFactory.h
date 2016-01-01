@@ -82,6 +82,32 @@ public:
 		}
 		vertices.clear();
 	}
+	void Clean(Vertex<T>* u) //remove this vertex from the graph
+	{
+		//remove all edges incident from u
+		for (int i = 0; i < u->aList.size(); ++i)
+		{
+			Edge<T>* e = u->aList[i];
+			std::vector<Edge<T>*>::iterator it = find(edges.begin(), edges.end(), e);
+			edges.erase(it);
+			delete e;
+		}
+		//remove all edges incident to u
+		for (int i = edges.size() - 1; i >= 0; --i)
+		{
+			Edge<T>* e = edges[i];
+			if (e->v == u)
+			{
+				e->u->aList.erase(find(e->u->aList.begin(), e->u->aList.end(), e));
+				edges.erase(edges.begin() + i);
+				delete e;
+			}
+		}
+		//finally delete the vertex
+		std::vector<Vertex<T>*>::iterator it = find(vertices.begin(), vertices.end(), u);
+		vertices.erase(it);
+		delete u;
+	}
 	std::vector<Vertex<T>*> vertices;
 	std::vector<Edge<T>*> edges;
 private:

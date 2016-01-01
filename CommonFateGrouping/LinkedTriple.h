@@ -20,6 +20,7 @@ public:
 	static float _timeToClosestEncounter(CParticleF& p, float u[], CParticleF& q, float v[]);
 
 	void print();
+	void printDetail();
 	LinkedTriple* best();
 	//float compatibility0(LinkedTriple* t); //only the distance factor
 	float compatibility(LinkedTriple* t); //include the angle factor
@@ -43,7 +44,7 @@ public:
 	float prob;
 	float _prob0; //temporary storage - this will be the prob in the next period
 	float _totalFitness;
-
+	int groupNumber;
 	int id;
 };
 

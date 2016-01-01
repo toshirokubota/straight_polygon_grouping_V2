@@ -9,25 +9,30 @@ LinkedTriple::LinkedTriple(StationaryParticle* p0, StationaryParticle* q0, Stati
 	calculateVelocity(p, q, r, v[0], v[1]);
 	fitness = fitnessMeasure(p, q, r);
 	id = id0;
+	prob = 0;
+	_prob0 = 0; 
+	groupNumber = 0;
 }
 
 float 
 LinkedTriple::fitnessMeasure(StationaryParticle* p, StationaryParticle* q, StationaryParticle* r)
 {
 	LinkedTripleFactory& factory = LinkedTripleFactory::getInstance();
-	/*
-	float d1 = Distance(p->getP(), r->getP()) / factory.unit;
+	
+	/*float d1 = Distance(p->getP(), r->getP()) / factory.unit;
 	float d2 = Distance(p->getP(), q->getP()) / factory.unit;
 	float ang = GetVisualAngle(r->getX(), r->getY(), q->getX(), q->getY(), p->getX(), p->getY());
-	float sn = sin(ang/2) + 1;
-	return sn * sn * exp(-d1*d2/2.0);
-	*/
+	float sn = sin(ang / 2);
+	return sn * sn * exp(-d1*d2/2.0);*/
+	
 	float d1 = Distance(p->getP(), r->getP());
 	float d2 = Distance(p->getP(), q->getP());
 	float df = (d1 - d2) / (factory.unit); 
 	float ang = GetVisualAngle(r->getX(), r->getY(), q->getX(), q->getY(), p->getX(), p->getY());
 	float sn = sin(ang / 2);
-	return sn * sn * exp(-df * df / 2.0);
+	//return sn * sn * exp(-df * df / 2.0);
+	//return 1.0f;
+	return exp(-df*df / 2.0);
 }
 
 bool 
@@ -46,16 +51,43 @@ LinkedTriple::calculateVelocity(StationaryParticle* p, StationaryParticle* q, St
 	return true;
 }
 
-void 
+void
 LinkedTriple::print()
 {
-	printf("%d %d %d %d %d %d %d %d %3.3f %3.3f %3.3f, %3.3f\n",
-		id, p->getId(), r->getId(), q->getId(), 
-		competitors.size(), frontSupporters.size(), leftSupporters.size(), rightSupporters.size(), 
+	printf("%d %d %d %d %d %d %d %d %d %3.3f %3.3f %3.3f %3.3f %3.3f, %3.3f\n",
+		id, p->getId(), r->getId(), q->getId(), groupNumber,
+		competitors.size(), frontSupporters.size(), leftSupporters.size(), rightSupporters.size(),
+		fate.m_X, fate.m_Y,
 		v[0], v[1], fitness, prob);
 }
 
-LinkedTriple* 
+void
+LinkedTriple::printDetail()
+{
+	print();
+	for (int i = 0; i < frontSupporters.size(); ++i)
+	{
+		printf("\tF> ");
+		frontSupporters[i]->print();
+	}
+	for (int i = 0; i < leftSupporters.size(); ++i)
+	{
+		printf("\tL> ");
+		leftSupporters[i]->print();
+	}
+	for (int i = 0; i < rightSupporters.size(); ++i)
+	{
+		printf("\tR> ");
+		rightSupporters[i]->print();
+	}
+	for (int i = 0; i < competitors.size(); ++i)
+	{
+		printf("\tC< ");
+		competitors[i]->print();
+	}
+}
+
+LinkedTriple*
 LinkedTriple::best()
 {
 	float maxFit = 0;
@@ -121,6 +153,7 @@ LinkedTriple::compatibility(CParticleF& p, float* u, CParticleF& q, float* v)
 
 	float ang = GetVisualAngle(x, y, x2, y2, x0, y0);
 	float sn = sin(ang / 2.0);
+	//sn = sn > sin(PI/4.0) ? 1.0 : 0;
 	return sn * sn  * ee;
 }
 

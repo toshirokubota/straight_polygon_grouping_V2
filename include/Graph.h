@@ -313,6 +313,31 @@ DFS(int k,
 	return trace;
 }
 
+template <class T>
+std::vector<Vertex<T>*>
+DFS(Vertex<T>* src, int& time)
+{
+	time++;
+	src->color = Gray;
+	src->d = time;
+	std::vector<Vertex<T>*> trace;
+	for (int i = 0; i < src->aList.size(); ++i)
+	{
+		Edge<T>* edge = src->aList[i];
+		Vertex<T>* node = edge->v;
+		if (node->color == White)
+		{
+			node->pi = src;
+			std::vector<Vertex<T>*> trace0 = DFS(node, time);
+			trace.insert(trace.end(), trace0.begin(), trace0.end());
+		}
+	}
+	src->color = Black;
+	src->f = ++time;
+	trace.push_back(src);
+	return trace;
+}
+
 template<class T>
 int
 partitionEdges(std::vector<Edge<T>*>& edges, int a, int b)
@@ -392,5 +417,28 @@ findVertex(const std::vector<Vertex<T>*>& vertices,
 	}
 	return NULL;
 }
+
+template <class T>
+void
+reverseEdges(vector<Vertex<T>*>& vnodes)
+{
+	vector<Edge<T>*> edges;
+	map<Vertex<T>*, int> vmap;
+	for (int i = 0; i < vnodes.size(); ++i)
+	{
+		edges.insert(edges.end(), vnodes[i]->aList.begin(), vnodes[i]->aList.end());
+		vnodes[i]->aList.clear();
+		vmap[vnodes[i]] = i;
+	}
+	for (int i = 0; i < edges.size(); ++i)
+	{
+		Vertex<T>* u = edges[i]->u;
+		Vertex<T>* v = edges[i]->v;
+		edges[i]->v = u;
+		edges[i]->u = v;
+		edges[i]->u->Add(edges[i]);
+	}
+}
+
 
 #endif /* ___GRAPH_CSCI381_H___*/

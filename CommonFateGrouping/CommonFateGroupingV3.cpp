@@ -268,77 +268,8 @@ collectRawTriples(Triangulation::Triangulator& trmap, float thres, float separat
 			}
 		}
 	}
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		printf("%d: ", i);
-		triples[i]->print();
-	}
 	return triples;
 }
-
-/*vector<RawTriple*>
-collectRawTriples(Triangulation::Triangulator& trmap, float thres, float separation)
-{
-	StationaryParticleFactory& factory = StationaryParticleFactory::getInstance();
-	vector<StationaryParticle*> particles;
-	map<Triangulation::_Internal::_vertex*, StationaryParticle*> pmap;
-	map<StationaryParticle*, int> imap;
-	vector<set<Triangulation::_Internal::_vertex*>> vpset(trmap.points.size());
-	for (int i = 0; i < trmap.points.size(); ++i)
-	{
-		StationaryParticle* sp = factory.makeParticle(trmap.points[i]->p);
-		particles.push_back(sp);
-		pmap[trmap.points[i]] = sp;
-		imap[sp] = i;
-	}
-
-	for (int i = 0; i < trmap.points.size(); ++i)
-	{
-		Triangulation::_Internal::_vertex* u = trmap.points[i];
-		StationaryParticle* sp = pmap[u];
-		CParticleF p = sp->getP();
-		for (int j = 0; j < trmap.points.size(); ++j)
-		{
-			Triangulation::_Internal::_vertex* v = trmap.points[j];
-			StationaryParticle* sq = pmap[v];
-			CParticleF q = sq->getP();
-			if (Distance(p, q) < separation)
-			{
-				int k = imap[sq];
-				vpset[i].insert(trmap.points[j]);
-				vpset[j].insert(trmap.points[i]);
-			}
-		}
-	}
-	vector<RawTriple*> triples;
-	for (int i = 0; i < trmap.points.size(); ++i)
-	{
-		StationaryParticle* sp = pmap[trmap.points[i]];
-		vector<StationaryParticle*> neighbors;
-		for (set<Triangulation::_Internal::_vertex*>::iterator it = vpset[i].begin(); it != vpset[i].end(); ++it)
-		{
-			StationaryParticle* np = pmap[*it];
-			neighbors.push_back(np);
-		}
-		for (int j = 0; j < neighbors.size(); ++j)
-		{
-			CParticleF q = neighbors[j]->getP();
-			StationaryParticle* sq = neighbors[j];
-			for (int k = 0; k < neighbors.size(); ++k)
-			{
-				if (k == j) continue;
-				StationaryParticle* sr = neighbors[k];
-				CParticleF r = neighbors[k]->getP();
-				RawTriple* triple = new RawTriple(sp, sq, sr);
-				if (triple->fitness > thres)
-				{
-					triples.push_back(triple);
-				}
-			}
-		}
-	}
-	return triples;
-}*/
 
 vector<vector<RawTriple*>> 
 clusterPairTriples(const vector<pair<RawTriple*,RawTriple*>>& pairs)
@@ -488,8 +419,8 @@ examineClusterTriples(vector<vector<RawTriple*>> &groups)
 }
 
 
-vector<vector<RawTriple*>>
-groupRawTriples(vector<RawTriple*>& rt, float thres)
+vector<pair<RawTriple*, RawTriple*>>
+collectPairTriples(vector<RawTriple*>& rt, float thres)
 {
 	vector<pair<RawTriple*, RawTriple*>> pairs;
 	for (int i = 0; i < rt.size(); ++i)
@@ -500,165 +431,18 @@ groupRawTriples(vector<RawTriple*>& rt, float thres)
 		{
 			RawTriple* t2 = rt[j];
 			StationaryParticle* q = t2->p;
+			if (p->getId() == q->getId()) continue;
+
 			float comp = LinkedTriple::compatibility(p->getP(), t1->v, q->getP(), t2->v);
-			if (comp > thres)
+			float a1 = cos(GetVisualAngle(q->getX(), q->getY(), p->getX() + t1->v[0], p->getY() + t1->v[1], p->getX(), p->getY()));
+			float a2 = cos(GetVisualAngle(p->getX(), p->getY(), q->getX() + t2->v[0], q->getY() + t2->v[1], q->getX(), q->getY()));
+			if (a1 > thres && a2 > thres)
 			{
 				pairs.push_back(pair<RawTriple*, RawTriple*>(t1, t2));
 			}
 		}
 	}
-	vector<vector<RawTriple*>> groups = clusterPairTriples(pairs);
-	examineClusterTriples(groups);
-
-	return groups;
-}
-
-vector<LinkedTriple*>
-collectLinkedTriples(vector<vector<RawTriple*>>& groups, float thres)
-{
-	LinkedTripleFactory& tfactory = LinkedTripleFactory::getInstance();
-	vector<LinkedTriple*> triples;
-	map<LinkedTriple*, int> gmap;
-	for (int i = 0; i < groups.size(); ++i)
-	{
-		set<RawTriple*> rset;
-		vector<LinkedTriple*> vt;
-		for (int j = 0; j < groups[i].size(); ++j)
-		{
-			rset.insert(groups[i][j]);
-		}
-		for (set<RawTriple*>::iterator it = rset.begin(); it != rset.end(); ++it)
-		{
-			RawTriple* raw = *it;
-			LinkedTriple* tr = tfactory.makeTriple(raw->p, raw->r, raw->q);
-			vt.push_back(tr);
-			gmap[tr] = i;
-			tr->groupNumber = i;
-		}
-		for (int j = 0; j < vt.size(); ++j)
-		{
-			LinkedTriple* t1 = vt[j];
-			for (int k = j + 1; k < vt.size(); ++k)
-			{
-				LinkedTriple* t2 = vt[k];
-				float comp = LinkedTriple::compatibility(t1->p->getP(), t1->v, t2->p->getP(), t2->v);
-				if (comp > thres)
-				{
-					t1->frontSupporters.push_back(t2);
-					t2->frontSupporters.push_back(t1);
-				}
-			}
-		}
-		triples.insert(triples.end(), vt.begin(), vt.end());
-	}
-
-	//add left, right supporters
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		LinkedTriple* t1 = triples[i];
-		int g1 = gmap[t1];
-		for (int j = i + 1; j < triples.size(); ++j)
-		{
-			LinkedTriple* t2 = triples[j];
-			//if (gmap[t2] == g1)
-			{
-				if (t1->p == t2->r && t1->q == t2->p)
-				{
-					t1->rightSupporters.push_back(t2);
-					t2->leftSupporters.push_back(t1);
-				}
-				if (t1->p == t2->q && t1->r == t2->p)
-				{
-					t1->leftSupporters.push_back(t2);
-					t2->rightSupporters.push_back(t1);
-				}
-			}
-		}
-	}
-
-	//add competitors
-	{
-		vector<vector<LinkedTriple*>> groups = clusterTriplesByP(triples);
-		for (int i = 0; i < groups.size(); ++i)
-		{
-			LinkedTriple* nil = tfactory.makeNillTriple(groups[i][0]->p);
-			triples.push_back(nil);
-			groups[i].push_back(nil);
-			for (int j = 0; j < groups[i].size(); ++j)
-			{
-				LinkedTriple* t = groups[i][j];
-				for (int k = 0; k < groups[i].size(); ++k)
-				{
-					if (j == k) continue;
-					LinkedTriple* s = groups[i][k];
-					t->competitors.push_back(s);
-				}
-			}
-		}
-		for (int i = 0; i < triples.size(); ++i)
-		{
-			triples[i]->prob = 1.0 / (triples[i]->competitors.size() + 1.0);
-		}
-	}
-	return triples;
-}
-
-void support(vector<LinkedTriple*>& triples, float thres)
-{
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		LinkedTriple* tr = triples[i];
-		float sum1 = 0; // tr->fitness;
-		for (int j = 0; j < tr->frontSupporters.size(); ++j)
-		{
-			LinkedTriple* tr2 = tr->frontSupporters[j];
-			sum1 += tr2->prob * tr->compatibility(tr2);
-		}
-		float sum2 = 0; // tr->fitness;
-		for (int j = 0; j < tr->leftSupporters.size(); ++j)
-		{
-			LinkedTriple* tr2 = tr->leftSupporters[j];
-			sum2 += tr2->prob; // *tr->compatibility0(tr2);
-		}
-		float sum3 = 0; // tr->fitness;
-		for (int j = 0; j < tr->rightSupporters.size(); ++j)
-		{
-			LinkedTriple* tr2 = tr->rightSupporters[j];
-			sum3 += tr2->prob; // *tr->compatibility0(tr2);
-		}
-		//tr->_totalFitness = tr->prob * tr->fitness + pow(sum1*sum2*sum3, 1.0 / 3.0);
-		tr->_totalFitness = tr->fitness + pow(sum1*sum2*sum3, 1.0 / 3.0);
-	}
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		LinkedTriple* tr = triples[i];
-		float sum = tr->prob * tr->_totalFitness;
-		for (int j = 0; j < tr->competitors.size(); ++j)
-		{
-			LinkedTriple* tr2 = tr->competitors[j];
-			sum += tr2->prob * tr2->_totalFitness;
-		}
-		if (sum >0)
-		{
-			tr->_prob0 = tr->prob * tr->_totalFitness / sum;
-		}
-		else
-		{
-			tr->_prob0 = 0.0f;
-		}
-	}
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		triples[i]->prob = triples[i]->_prob0;
-	}
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		//if (triples[i]->p->getId() == 25)
-		if (triples[i]->p->getId() == 25 && triples[i]->r->getId() == 26 && triples[i]->q->getId() == 24)
-		{
-			triples[i]->printDetail();
-		}
-	}
+	return pairs;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -678,7 +462,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		int ndimP;
 		LoadData(P0, prhs[0], classIdP, ndimP, &dimsP);
 		for (int i = 0; i < dimsP[0]; ++i)
-		{
+		{http://www.espnfc.us/gamecast/432126/gamecast.html
 			float x = GetData2(P0, i, 0, dimsP[0], dimsP[1], (float)0);
 			float y = GetData2(P0, i, 1, dimsP[0], dimsP[1], (float)0);
 			points.push_back(CParticleF(x, y));
@@ -716,20 +500,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	perturbePoints(points, perturbationScale);
 	//vector<StationaryParticle*> particles = collectStationaryParticles(points);
 	vector<RawTriple*> rawt = collectRawTriples(trmap, thres1, 1.25*(LinkedTripleFactory::getInstance()).unit);
-	vector<vector<RawTriple*>> groups = groupRawTriples(rawt, thres2);
-	vector<LinkedTriple*> triples = collectLinkedTriples(groups, thres2);
-
-	for (int i = 0; i < numIter; ++i)
-	{
-		printf("Iteration %d:\n", i);
-		support(triples, 0.01);
-		//updateFate(triples);
-	}
-	for (int i = 0; i < triples.size(); ++i)
-	{
-		triples[i]->updateFate();
-		triples[i]->print();
-	}
+	vector<pair<RawTriple*, RawTriple*>> pairs = collectPairTriples(rawt, thres2);
 
 	if (nlhs >= 1)
 	{
@@ -748,61 +519,36 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	if (nlhs >= 2)
 	{
 		LinkedTripleFactory& factory = LinkedTripleFactory::getInstance();
-		const int dims[] = { factory.triples.size(), 10 };
+		const int dims[] = { rawt.size(), 5};
 		vector<float> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			LinkedTriple* t = factory.triples[i];
-			t->updateFate();
-			SetData2(F, i, 0, dims[0], dims[1], (float)t->id);
-			SetData2(F, i, 1, dims[0], dims[1], (float)t->p->getId());
-			SetData2(F, i, 2, dims[0], dims[1], (float)t->r->getId());
-			SetData2(F, i, 3, dims[0], dims[1], (float)t->q->getId());
-			SetData2(F, i, 4, dims[0], dims[1], t->fate.m_X);
-			SetData2(F, i, 5, dims[0], dims[1], t->fate.m_Y);
-			SetData2(F, i, 6, dims[0], dims[1], t->v[0]);
-			SetData2(F, i, 7, dims[0], dims[1], t->v[1]);
-			SetData2(F, i, 8, dims[0], dims[1], t->fitness);
-			SetData2(F, i, 9, dims[0], dims[1], t->prob);
+			RawTriple* t = rawt[i];
+			SetData2(F, i, 0, dims[0], dims[1], (float)t->p->getId());
+			SetData2(F, i, 1, dims[0], dims[1], (float)t->r->getId());
+			SetData2(F, i, 2, dims[0], dims[1], (float)t->q->getId());
+			SetData2(F, i, 3, dims[0], dims[1], t->v[0]);
+			SetData2(F, i, 4, dims[0], dims[1], t->v[1]);
 		}
 		plhs[1] = StoreData(F, mxSINGLE_CLASS, 2, dims);
 	}
 	if (nlhs >= 3)
 	{
-		const int dims[] = { triples.size(), 2 };
-		vector<int> F(dims[0] * dims[1]);
+		const int dims[] = { pairs.size(), 6 };
+		vector<float> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			LinkedTriple* t = triples[i]->best();
-			SetData2(F, i, 0, dims[0], dims[1], triples[i]->id);
-			if (t == NULL)
-			{
-				SetData2(F, i, 1, dims[0], dims[1], 0);
-			}
-			else {
-				SetData2(F, i, 1, dims[0], dims[1], t->id);
-			}
-		}
-		plhs[2] = StoreData(F, mxINT32_CLASS, 2, dims);
+			RawTriple* a = pairs[i].first;
+			RawTriple* b = pairs[i].second;
 
-	}
-	if (nlhs >= 4)
-	{
-		const int dims[] = { groups.size(), 1 };
-		vector<vector<int>> vvint;
-		for (int i = 0; i < groups.size(); ++i)
-		{
-			const int dims2[] = { groups[i].size(), 3 };
-			vector<int> vint(dims2[0] * dims2[1]); 
-			for (int j = 0; j < dims2[0]; ++j)
-			{
-				SetData2(vint, j, 0, dims2[0], dims2[1], groups[i][j]->p->getId());
-				SetData2(vint, j, 1, dims2[0], dims2[1], groups[i][j]->r->getId());
-				SetData2(vint, j, 2, dims2[0], dims2[1], groups[i][j]->q->getId());
-			}
-			vvint.push_back(vint);
+			SetData2(F, i, 0, dims[0], dims[1], (a->p->getX() + b->p->getX()) / 2);
+			SetData2(F, i, 1, dims[0], dims[1], (a->p->getY() + b->p->getY()) / 2);
+			SetData2(F, i, 2, dims[0], dims[1], a->p->getX());
+			SetData2(F, i, 3, dims[0], dims[1], a->p->getY());
+			SetData2(F, i, 4, dims[0], dims[1], b->p->getX());
+			SetData2(F, i, 5, dims[0], dims[1], b->p->getY());
 		}
-		plhs[3] = StoreDataCell(vvint, mxINT32_CLASS, 2, dims, 3);
+		plhs[2] = StoreData(F, mxSINGLE_CLASS, 2, dims);
 	}
 	for (int i = 0; i < rawt.size(); ++i)
 	{
