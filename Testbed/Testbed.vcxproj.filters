@@ -28,9 +28,7 @@
     <ClCompile Include="..\src\TriangulationHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TestbedV9B.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="TestbedFindCores.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mexFileIO.h">

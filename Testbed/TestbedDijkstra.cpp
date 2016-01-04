@@ -24,7 +24,6 @@ using namespace std;
 #include <Graph.h>
 #include <GraphFactory.h>
 #include <Dijkstra.h>
-#include <Kruskal.h>
 
 struct MAPoint
 {
@@ -32,14 +31,16 @@ struct MAPoint
 	{
 		this->x = (p->p.m_X + q->p.m_X) / 2.0;
 		this->y = (p->p.m_Y	+ q->p.m_Y) / 2.0;
-		this->z = Distance(p->p, q->p) / 2.0; 
-		//this->z = sqrt(this->z);
+		this->z = Distance(p->p, q->p) / 10.0; //TK!!!
 		this->theta = GetVisualDirection(q->p.m_X, q->p.m_Y, p->p.m_X, p->p.m_Y);
 		this->p = p;
 		this->q = q;
 		this->pid = pid;
 		this->qid = qid;
 		this->id = _id++;
+		this->x0 = this->x;
+		this->y0 = this->y;
+		this->z0 = this->z;
 		//next = NULL;
 	}
 	void print(char* tab="", char* end="\n")
@@ -55,6 +56,9 @@ struct MAPoint
 	Triangulation::_Internal::_vertex* q;
 	int id, pid, qid; //for debugging
 	//temporal location
+	float x0;
+	float y0;
+	float z0;
 	set<MAPoint*> neighbors;
 	//MAPoint* avater; //this allows to move to another point to  seek for a higher ground.
 	//MAPoint* next; //used to build a DAG
@@ -136,21 +140,16 @@ CParticleF Closest2Line3d( CParticleF& p, CParticleF& q, CParticleF& x)
 float distanceAsymmetric(MAPoint* p, MAPoint* q)
 {
 	CParticleF p0(p->x, p->y, p->z);
-	CParticleF q0(q->x, q->y, p->z); //disregard Z - change this to q->z to regard Z
+	CParticleF q0(q->x, q->y, q->z);
 	//return Distance(p0, q0);
 	CParticleF p2(p->x - sin(p->theta), p->y + cos(p->theta), p->z);
 	CParticleF y = Closest2Line3d(p0, p2, q0);
 	return Distance(y, q0);
 }
 
-float distanceSymmetric(MAPoint* p, MAPoint* q)
+float distance(MAPoint* p, MAPoint* q)
 {
 	return distanceAsymmetric(p, q) + distanceAsymmetric(q, p);
-}
-
-float distance2D(MAPoint* p, MAPoint* q)
-{
-	return Distance(p->x, p->y, q->x, q->y);
 }
 
 bool
@@ -201,6 +200,14 @@ collectNeighbors(vector<MAPoint*>& points, Triangulation::Triangulator& trmap, f
 				N[i].push_back(j);
 			}
 		}
+		/*for (int j = 0; j < u->edges.size(); ++j)
+		{
+			Triangulation::_Internal::_vertex* v = u->edges[j]->vertices[0] == u ? u->edges[j]->vertices[1] : u->edges[j]->vertices[0];
+			if (Distance(u->p, v->p) <= thres)
+			{
+				N[i].push_back(j);
+			}
+		}*/
 	}
 	int maxKey = 0;
 	for (int i = 0; i < points.size(); ++i)
@@ -241,8 +248,6 @@ collectMedialAxisPoints(Triangulation::Triangulator& trmap, float thres)
 	{
 		for (int j = i + 1; j < trmap.points.size(); ++j)
 		{
-			//if (trmap.points[i]->p.m_Life != trmap.points[j]->p.m_Life) continue; //TK!!
-
 			if (Distance(trmap.points[i]->p, trmap.points[j]->p) <= thres) 
 			{
 				mapoints.push_back(new MAPoint(trmap.points[i], trmap.points[j], i, j));
@@ -252,196 +257,77 @@ collectMedialAxisPoints(Triangulation::Triangulator& trmap, float thres)
 	return mapoints;
 }
 
+bool
+forwardLooking(MAPoint* p, MAPoint* ref)
+{
+	float x1 = cos(p->theta);
+	float y1 = sin(p->theta);
+	float x2 = cos(ref->theta);
+	float y2 = sin(ref->theta);
+	float a = GetVisualAngle(x1, y1, x2, y2, 0.0, 0.0);
+	if (a > PI / 2.0)
+	{
+		x1 = -x1;
+		y1 = -y1;
+	}
+	float a2 = GetVisualAngle2(x1, y1, x2, y2, 0.0, 0.0);
+	if (a2 > 0.0) return true;
+	else if (a2 < 0.0) return false;
+	else {
+		return p->id > ref->id;
+	}
+}
+
 /*
 */
 vector<Vertex<MAPoint*>*>
-buildDag(vector<MAPoint*>& P, float thres)
+buildDAG(vector<MAPoint*>& P, MAPoint* ref)
 {
 	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> vertices(P.size());
+	vector<Vertex<MAPoint*>*> vertices(P.size()+1);
+	Vertex<MAPoint*>* src = NULL;
 	map<MAPoint*, int>  imap;
 	for (int i = 0; i < P.size(); ++i)
 	{
 		vertices[i] = factory.makeVertex(P[i]);
+		if (P[i] == ref) src = vertices[i];
 		imap[P[i]] = i;
 	}
-	vector<Edge<MAPoint*>*> edges;
+	vertices[P.size()] = factory.makeVertex(ref);
+	Vertex<MAPoint*>* sink = vertices[P.size()];
 
 	for (int i = 0; i < P.size(); ++i)
 	{
 		MAPoint* p = P[i];
-		vector<pair<float, MAPoint*>> pairs;
-		for (set<MAPoint*>::iterator it = p->neighbors.begin(); it != p->neighbors.end(); ++it)
+		for (set<MAPoint*>::iterator it = p->neighbors.begin(); it != p->neighbors.end(); ++it) 
 		{
 			MAPoint* q = *it;
 			if (p == q) continue;
-			float w = distanceSymmetric(p, q);
-			if (w < thres)
+			int k = imap[q];
+			if (forwardLooking(q, p))
 			{
-				pairs.push_back(pair<float, MAPoint*>(w*w, q));
+				Vertex<MAPoint*>* v = (q == ref) ? sink : vertices[k]; //separate source and sink
+				/*float dpp = Distance(p->p->p, q->p->p);
+				float dpq = Distance(p->p->p, q->q->p);
+				float dqp = Distance(p->q->p, q->p->p);
+				float dqq = Distance(p->q->p, q->q->p);
+				float w = 0;
+				if (dpp + dqq < dpq + dqp)
+				{
+					w = Max(dpp, dqq);
+				}
+				else
+				{
+					w = Max(dpq, dqp);
+				}*/
+				//float w = sqrt((p->x - q->x)*(p->x - q->x) + (p->y - q->y)*(p->y - q->y) + (p->z - q->z)*(p->z - q->z));
+				float w = distance(p, q);
+				Edge<MAPoint*>* ed = factory.makeEdge(vertices[i], v, w*w);
+				vertices[i]->Add(ed);
 			}
-		}
-		if (pairs.empty()) continue;
-
-		//sort(pairs.begin(), pairs.end());
-		//float minW = pairs.size()>1 ? pairs[1].first: pairs[0].first; //should keep two choices at least
-		for (int j = 0; j < pairs.size(); ++j)
-		{
-			//if (pairs[j].first > thres) break;
-			//if (pairs[j].first > minW * 2.0) break;
-
-			MAPoint* chosen = pairs[j].second;
-			if (chosen->z < p->z) continue; //only consider upward direction
-			if (distance2D(p, chosen) > p->z) continue; //has to be within the radius of convexity
-
-			int k = imap[chosen];
-			Edge<MAPoint*>* ed = factory.makeEdge(vertices[i], vertices[k], pairs[j].first);
-			vertices[i]->Add(ed);
 		}
 	}
 	return vertices;
-}
-
-vector<Vertex<MAPoint*>*>
-mergeVertices(vector<Vertex<MAPoint*>*>& peaks)
-{
-	vector<Node<Vertex<MAPoint*>*>*> nodes;
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		nodes.push_back(makeset(peaks[i]));
-	}
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		MAPoint* p = peaks[i]->key;
-		for (int j = 0; j < peaks.size(); ++j)
-		{
-			if (i == j) continue;
-			MAPoint* q = peaks[j]->key;
-			if (p->neighbors.find(q) != p->neighbors.end())
-			{
-				merge(nodes[i], nodes[j]);
-			}
-		}
-	}
-	vector<Node<Vertex<MAPoint*>*>*> reps = clusters(nodes);
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> X;
-	for (int i = 0; i < reps.size(); ++i)
-	{
-		Vertex<MAPoint*>* u = factory.makeVertex(NULL);
-		for (int j = 0; j < peaks.size(); ++j)
-		{
-			if (findset(nodes[j]) == reps[i])
-			{
-				nodes[j]->key->Add(factory.makeEdge(nodes[j]->key, u));
-			}
-		}
-		X.push_back(u);
-	}
-	for (int i = 0; i < nodes.size(); ++i)
-	{
-		delete nodes[i];
-	}
-	return X;
-}
-
-struct TimedPoint
-{
-	TimedPoint(MAPoint* p, MAPoint* q, int t)
-	{
-		this->p = p;
-		this->q = q;
-		this->time = t;
-	}
-	MAPoint* p;
-	MAPoint* q;
-	int time;
-};
-
-vector<vector<TimedPoint>>
-groupVertices(vector<Vertex<MAPoint*>*>& vertices)
-{
-	vector<Vertex<MAPoint*>*> peaks0;
-	for (int i = 0; i < vertices.size(); ++i)
-	{
-		Vertex<MAPoint*>* u = vertices[i];
-		if (u->aList.empty())
-		{
-			peaks0.push_back(u);
-			printf("LM: %d, %d, %d\n", u->key->id, u->key->pid, u->key->qid);
-		}
-	}
-	vector<Vertex<MAPoint*>*> peaks = mergeVertices(peaks0);
-	reverseEdges(vertices);
-
-	vector<vector<TimedPoint>> groups;
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		for (int i = 0; i < vertices.size(); ++i)
-		{
-			vertices[i]->Reset();
-		}
-
-		int iter = 0;
-		vector<Vertex<MAPoint*>*> Q;
-		vector<TimedPoint> G;
-		for (int j = 0; j < peaks[i]->aList.size(); ++j)
-		{
-			Q.push_back(peaks[i]->aList[j]->v);
-			peaks[i]->aList[j]->v->color = Black;
-			G.push_back(TimedPoint(peaks[i]->aList[j]->v->key, NULL, iter));
-		}
-		while (Q.empty() == false)
-		{
-			iter++;
-			vector<Vertex<MAPoint*>*> Q2;
-			for (int j = 0; j < Q.size(); ++j)
-			{
-				Vertex<MAPoint*>* u = Q[j];
-				for (int k = 0; k < u->aList.size(); ++k)
-				{
-					Vertex<MAPoint*>* v = u->aList[k]->v;
-					/*if (i==0) // && (v->key->pid == 16 || v->key->pid == 16 || v->key->pid == 22 || v->key->pid == 22))
-					{
-						printf("%d %f) %d %d %d %f => %d %d %d %f\n",
-							iter, u->aList[k]->w,
-							u->key->id, u->key->pid, u->key->qid, u->key->z, 
-							v->key->id, v->key->pid, v->key->qid, v->key->z);
-					}*/
-					if (v->color == White)
-					{
-						bool bOk = true;
-						MAPoint* q = v->key;
-						for (set<MAPoint*>::iterator it = q->neighbors.begin(); it != q->neighbors.end(); ++it)
-						{
-							MAPoint* r = *it;
-							if (r->z > u->key->z)
-							{
-								bOk = false;
-								break;
-							}
-						}
-						if (bOk)
-						{
-							Q2.push_back(v);
-							v->color = Black;
-							G.push_back(TimedPoint(v->key, u->key, iter));
-						}
-					}
-				}
-			}
-			Q = Q2;
-		}
-		groups.push_back(G);
-	}
-	
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		factory.Clean(peaks[i]);
-	}
-	reverseEdges(vertices);
-	return groups;
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -464,84 +350,87 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		{
 			float x = GetData2(P0, i, 0, dimsP[0], dimsP[1], (float)0);
 			float y = GetData2(P0, i, 1, dimsP[0], dimsP[1], (float)0);
-			float val = GetData2(P0, i, 2, dimsP[0], dimsP[1], (float)0);
-			P.push_back(CParticleF(x, y, 0, val));
+			P.push_back(CParticleF(x, y));
 		}
+	}
+	vector<int> ids;
+	{
+		const int* dims;
+		mxClassID classIdP;
+		int ndimP;
+		LoadData(ids, prhs[1], classIdP, ndimP, &dims);
 	}
 
 	float thres = std::numeric_limits<float>::infinity();
-	if (nrhs >= 2)
-	{
-		mxClassID classId;
-		int ndim;
-		const int* dims;
-		ReadScalar(thres, prhs[1], classId);
-	}
-	float maxDist = std::numeric_limits<float>::infinity();
 	if (nrhs >= 3)
 	{
 		mxClassID classId;
 		int ndim;
 		const int* dims;
-		ReadScalar(maxDist, prhs[2], classId);
+		ReadScalar(thres, prhs[2], classId);
 	}
-	MAPoint::_id = 0;
 
+	MAPoint::_id = 0;
 	Triangulation::Triangulator trmap(P);
 	float unit = calculateScaleUnit(trmap); //set the unit
 
-	vector<MAPoint*> mapoints = collectMedialAxisPoints(trmap, maxDist);
-	collectNeighbors(mapoints, trmap, unit*1.25);
+	vector<MAPoint*> mapoints = collectMedialAxisPoints(trmap, thres);
+	collectNeighbors(mapoints, trmap, unit*1.1);
+	MAPoint* ref = NULL;
+	for (int i = 0; i < mapoints.size(); ++i)
+	{
+		if (mapoints[i]->pid == Min(ids[0], ids[1]) && mapoints[i]->qid == Max(ids[0], ids[1]))
+		{
+			ref = mapoints[i];
+			break;
+		}
+	}
 
 	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> vertices = buildDag(mapoints, thres);
-	vector<vector<TimedPoint>> groups = groupVertices(vertices);
+	vector<Vertex<MAPoint*>*> vertices = buildDAG(mapoints, ref);
+	Vertex<MAPoint*>* src = NULL;
+	Vertex<MAPoint*>* sink = vertices[vertices.size()-1];
+	for (int i = 0; i < mapoints.size(); ++i)
+	{
+		if (vertices[i]->key == ref)
+		{
+			src = vertices[i];
+			break;
+		}
+	}
+
+	Dijkstra(vertices, src);
+	vector<Vertex<MAPoint*>*> path = tracePath(sink, src);
 
 	if (nlhs >= 1)
 	{
-		const int dims[] = { groups.size(), 1 };
-		vector<vector<int>> vvint;
+		const int dims[] = { path.size(), 3 };
+		vector<int> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			const int dims2[] = { groups[i].size(), 3 };
-			vector<int> vint(dims2[0] * dims2[1]);
-			for (int j = 0; j < dims2[0]; ++j)
-			{
-				SetData2(vint, j, 0, dims2[0], dims2[1], groups[i][j].p->id);
-				SetData2(vint, j, 1, dims2[0], dims2[1], groups[i][j].time);
-				if (groups[i][j].q == NULL)
-				{
-					SetData2(vint, j, 2, dims2[0], dims2[1], -1);
-				}
-				else
-				{
-					SetData2(vint, j, 2, dims2[0], dims2[1], groups[i][j].q->id);
-				}
-			}
-			vvint.push_back(vint);
+			SetData2(F, i, 0, dims[0], dims[1], path[i]->key->id);
+			SetData2(F, i, 1, dims[0], dims[1], path[i]->key->pid);
+			SetData2(F, i, 2, dims[0], dims[1], path[i]->key->qid);
 		}
-		plhs[0] = StoreDataCell(vvint, mxINT32_CLASS, 2, dims, 3);
+		plhs[0] = StoreData(F, mxINT32_CLASS, 2, dims);
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { factory.edges.size(), 7 };
-		vector<float> F(dims[0] * dims[1]);
+		const int dims[] = { factory.edges.size(), 4 };
+		vector<int> F(dims[0] * dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
 			Edge<MAPoint*>* ed = factory.edges[i];
-			SetData2(F, i, 0, dims[0], dims[1], (float)ed->u->key->pid);
-			SetData2(F, i, 1, dims[0], dims[1], (float)ed->u->key->qid);
-			SetData2(F, i, 2, dims[0], dims[1], (float)ed->v->key->pid);
-			SetData2(F, i, 3, dims[0], dims[1], (float)ed->v->key->qid);
-			SetData2(F, i, 4, dims[0], dims[1], (float)ed->u->key->id);
-			SetData2(F, i, 5, dims[0], dims[1], (float)ed->v->key->id);
-			SetData2(F, i, 6, dims[0], dims[1], (float)ed->w);
+			SetData2(F, i, 0, dims[0], dims[1], ed->u->key->pid);
+			SetData2(F, i, 1, dims[0], dims[1], ed->u->key->qid);
+			SetData2(F, i, 2, dims[0], dims[1], ed->v->key->pid);
+			SetData2(F, i, 3, dims[0], dims[1], ed->v->key->qid);
 		}
 		plhs[1] = StoreData(F, mxINT32_CLASS, 2, dims);
 	}
 	if (nlhs >= 3)
 	{
-		const int dims[] = { mapoints.size(), 7};
+		const int dims[] = { mapoints.size(), 10};
 		vector<float> F(dims[0]*dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
@@ -552,6 +441,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 			SetData2(F, i, 4, dims[0], dims[1], mapoints[i]->theta);
 			SetData2(F, i, 5, dims[0], dims[1], (float)mapoints[i]->pid);
 			SetData2(F, i, 6, dims[0], dims[1], (float)mapoints[i]->qid);
+			SetData2(F, i, 7, dims[0], dims[1], mapoints[i]->x0);
+			SetData2(F, i, 8, dims[0], dims[1], mapoints[i]->y0);
+			SetData2(F, i, 9, dims[0], dims[1], mapoints[i]->z0);
 		}
 		plhs[2] = StoreData(F, mxSINGLE_CLASS, 2, dims);
 	}
@@ -560,7 +452,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		delete mapoints[i];
 	}
 	GraphFactory<MAPoint*>::GetInstance().Clean();
-
+	/*for (int i = 0; i < trmap.points.size(); ++i)
+	{
+		links[trmap.points[i]]->clear();
+		delete links[trmap.points[i]];
+		links[trmap.points[i]] = NULL;
+	}*/
+	//StationaryParticleFactory::getInstance().clean();
 	mexUnlock();
 }
 

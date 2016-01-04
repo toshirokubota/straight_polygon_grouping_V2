@@ -89,35 +89,6 @@ float calculateScaleUnit(Triangulation::Triangulator& trmap)
 	return separation;
 }
 
-float distance0(MAPoint* p, MAPoint* q, float scale = 1.0f, float  wz = 1.0f, float wt = 30.0f, bool bprint = false)
-{
-	float dx = (p->x - q->x) / scale;
-	float dy = (p->y - q->y) / scale;
-	float dz = wz * (p->z - q->z) / scale;
-	float dt = wt * sin(p->theta - q->theta);
-	float d = sqrt(dx*dx + dy*dy + dz*dz + dt*dt);
-	if (bprint)
-	{
-		printf("dx=%3.3f dy=%3.3f dz=%3.3f dt=%3.3f d=%3.3f\n",
-			dx, dy, dz, dt, d);
-	}
-	return d;
-}
-
-float distance1(MAPoint* p, MAPoint* q, float thres = 0.9)
-{
-	if (Abs(cos(p->theta - q->theta)) < thres)
-	{
-		return std::numeric_limits<float>::infinity();
-	}
-	float dx = (p->x - q->x);
-	float dy = (p->y - q->y);
-	float dz = (p->z - q->z);
-	//float dt = wt * sin(p->theta - q->theta);
-	float d = sqrt(dx*dx + dy*dy + dz*dz);
-	return d;
-}
-
 /*
 compute the closest point from x on the line connecting p and q.
 p and q have to be distinct.
@@ -153,24 +124,6 @@ float distance2D(MAPoint* p, MAPoint* q)
 	return Distance(p->x, p->y, q->x, q->y);
 }
 
-bool
-isNeighbor(Triangulation::_Internal::_vertex* p, Triangulation::_Internal::_vertex* q)
-{
-	if (p == q)
-	{
-		return false;
-	}
-
-	for (int i = 0; i < p->edges.size(); ++i)
-	{
-		if (q == p->edges[i]->vertices[0] || q == p->edges[i]->vertices[1])
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
 int
 _key(int pid, int qid, int size)
 {
@@ -193,9 +146,17 @@ collectNeighbors(vector<MAPoint*>& points, Triangulation::Triangulator& trmap, f
 	for (int i = 0; i < n; ++i)
 	{
 		Triangulation::_Internal::_vertex* u = trmap.points[i];
-		for (int j = 0; j < n; ++j)
+		/*for (int j = 0; j < n; ++j)
 		{
 			Triangulation::_Internal::_vertex* v = trmap.points[j];
+			if (Distance(u->p, v->p) <= thres)
+			{
+				N[i].push_back(j);
+			}
+		}*/
+		for (int j = 0; j < u->edges.size(); ++j)
+		{
+			Triangulation::_Internal::_vertex* v = u->edges[j]->vertices[0] == u ? u->edges[j]->vertices[1] : u->edges[j]->vertices[0];
 			if (Distance(u->p, v->p) <= thres)
 			{
 				N[i].push_back(j);
@@ -252,197 +213,38 @@ collectMedialAxisPoints(Triangulation::Triangulator& trmap, float thres)
 	return mapoints;
 }
 
-/*
-*/
-vector<Vertex<MAPoint*>*>
-buildDag(vector<MAPoint*>& P, float thres)
+vector<MAPoint*> locateCores(vector<MAPoint*>& P, float thres)
 {
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> vertices(P.size());
-	map<MAPoint*, int>  imap;
-	for (int i = 0; i < P.size(); ++i)
-	{
-		vertices[i] = factory.makeVertex(P[i]);
-		imap[P[i]] = i;
-	}
-	vector<Edge<MAPoint*>*> edges;
-
+	vector<MAPoint*> cores;
 	for (int i = 0; i < P.size(); ++i)
 	{
 		MAPoint* p = P[i];
-		vector<pair<float, MAPoint*>> pairs;
+		bool bCore = true;
 		for (set<MAPoint*>::iterator it = p->neighbors.begin(); it != p->neighbors.end(); ++it)
 		{
 			MAPoint* q = *it;
-			if (p == q) continue;
-			float w = distanceSymmetric(p, q);
-			if (w < thres)
+			if (Abs(cos(p->theta - q->theta)) > thres)
 			{
-				pairs.push_back(pair<float, MAPoint*>(w*w, q));
-			}
-		}
-		if (pairs.empty()) continue;
-
-		//sort(pairs.begin(), pairs.end());
-		//float minW = pairs.size()>1 ? pairs[1].first: pairs[0].first; //should keep two choices at least
-		for (int j = 0; j < pairs.size(); ++j)
-		{
-			//if (pairs[j].first > thres) break;
-			//if (pairs[j].first > minW * 2.0) break;
-
-			MAPoint* chosen = pairs[j].second;
-			if (chosen->z < p->z) continue; //only consider upward direction
-			if (distance2D(p, chosen) > p->z) continue; //has to be within the radius of convexity
-
-			int k = imap[chosen];
-			Edge<MAPoint*>* ed = factory.makeEdge(vertices[i], vertices[k], pairs[j].first);
-			vertices[i]->Add(ed);
-		}
-	}
-	return vertices;
-}
-
-vector<Vertex<MAPoint*>*>
-mergeVertices(vector<Vertex<MAPoint*>*>& peaks)
-{
-	vector<Node<Vertex<MAPoint*>*>*> nodes;
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		nodes.push_back(makeset(peaks[i]));
-	}
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		MAPoint* p = peaks[i]->key;
-		for (int j = 0; j < peaks.size(); ++j)
-		{
-			if (i == j) continue;
-			MAPoint* q = peaks[j]->key;
-			if (p->neighbors.find(q) != p->neighbors.end())
-			{
-				merge(nodes[i], nodes[j]);
-			}
-		}
-	}
-	vector<Node<Vertex<MAPoint*>*>*> reps = clusters(nodes);
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> X;
-	for (int i = 0; i < reps.size(); ++i)
-	{
-		Vertex<MAPoint*>* u = factory.makeVertex(NULL);
-		for (int j = 0; j < peaks.size(); ++j)
-		{
-			if (findset(nodes[j]) == reps[i])
-			{
-				nodes[j]->key->Add(factory.makeEdge(nodes[j]->key, u));
-			}
-		}
-		X.push_back(u);
-	}
-	for (int i = 0; i < nodes.size(); ++i)
-	{
-		delete nodes[i];
-	}
-	return X;
-}
-
-struct TimedPoint
-{
-	TimedPoint(MAPoint* p, MAPoint* q, int t)
-	{
-		this->p = p;
-		this->q = q;
-		this->time = t;
-	}
-	MAPoint* p;
-	MAPoint* q;
-	int time;
-};
-
-vector<vector<TimedPoint>>
-groupVertices(vector<Vertex<MAPoint*>*>& vertices)
-{
-	vector<Vertex<MAPoint*>*> peaks0;
-	for (int i = 0; i < vertices.size(); ++i)
-	{
-		Vertex<MAPoint*>* u = vertices[i];
-		if (u->aList.empty())
-		{
-			peaks0.push_back(u);
-			printf("LM: %d, %d, %d\n", u->key->id, u->key->pid, u->key->qid);
-		}
-	}
-	vector<Vertex<MAPoint*>*> peaks = mergeVertices(peaks0);
-	reverseEdges(vertices);
-
-	vector<vector<TimedPoint>> groups;
-	for (int i = 0; i < peaks.size(); ++i)
-	{
-		for (int i = 0; i < vertices.size(); ++i)
-		{
-			vertices[i]->Reset();
-		}
-
-		int iter = 0;
-		vector<Vertex<MAPoint*>*> Q;
-		vector<TimedPoint> G;
-		for (int j = 0; j < peaks[i]->aList.size(); ++j)
-		{
-			Q.push_back(peaks[i]->aList[j]->v);
-			peaks[i]->aList[j]->v->color = Black;
-			G.push_back(TimedPoint(peaks[i]->aList[j]->v->key, NULL, iter));
-		}
-		while (Q.empty() == false)
-		{
-			iter++;
-			vector<Vertex<MAPoint*>*> Q2;
-			for (int j = 0; j < Q.size(); ++j)
-			{
-				Vertex<MAPoint*>* u = Q[j];
-				for (int k = 0; k < u->aList.size(); ++k)
+				if (q->z > p->z)
 				{
-					Vertex<MAPoint*>* v = u->aList[k]->v;
-					/*if (i==0) // && (v->key->pid == 16 || v->key->pid == 16 || v->key->pid == 22 || v->key->pid == 22))
-					{
-						printf("%d %f) %d %d %d %f => %d %d %d %f\n",
-							iter, u->aList[k]->w,
-							u->key->id, u->key->pid, u->key->qid, u->key->z, 
-							v->key->id, v->key->pid, v->key->qid, v->key->z);
-					}*/
-					if (v->color == White)
-					{
-						bool bOk = true;
-						MAPoint* q = v->key;
-						for (set<MAPoint*>::iterator it = q->neighbors.begin(); it != q->neighbors.end(); ++it)
-						{
-							MAPoint* r = *it;
-							if (r->z > u->key->z)
-							{
-								bOk = false;
-								break;
-							}
-						}
-						if (bOk)
-						{
-							Q2.push_back(v);
-							v->color = Black;
-							G.push_back(TimedPoint(v->key, u->key, iter));
-						}
-					}
+					bCore = false;
+					break;
 				}
 			}
-			Q = Q2;
 		}
-		groups.push_back(G);
+		if (bCore)
+		{
+			cores.push_back(p);
+		}
 	}
-	
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	for (int i = 0; i < peaks.size(); ++i)
+
+	for (int i = 0; i < cores.size(); ++i)
 	{
-		factory.Clean(peaks[i]);
+		printf("Core: %d %d %d\n", cores[i]->id, cores[i]->pid, cores[i]->qid);
 	}
-	reverseEdges(vertices);
-	return groups;
+	return cores;
 }
+
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -469,7 +271,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		}
 	}
 
-	float thres = std::numeric_limits<float>::infinity();
+	float thres = 0.99;
 	if (nrhs >= 2)
 	{
 		mxClassID classId;
@@ -493,51 +295,23 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	vector<MAPoint*> mapoints = collectMedialAxisPoints(trmap, maxDist);
 	collectNeighbors(mapoints, trmap, unit*1.25);
 
-	GraphFactory<MAPoint*>& factory = GraphFactory<MAPoint*>::GetInstance();
-	vector<Vertex<MAPoint*>*> vertices = buildDag(mapoints, thres);
-	vector<vector<TimedPoint>> groups = groupVertices(vertices);
+	vector<MAPoint*> cores = locateCores(mapoints, thres);
 
 	if (nlhs >= 1)
 	{
-		const int dims[] = { groups.size(), 1 };
-		vector<vector<int>> vvint;
+		const int dims[] = { cores.size(), 3 };
+		vector<int> F(dims[0]*dims[1]);
 		for (int i = 0; i < dims[0]; ++i)
 		{
-			const int dims2[] = { groups[i].size(), 3 };
-			vector<int> vint(dims2[0] * dims2[1]);
-			for (int j = 0; j < dims2[0]; ++j)
-			{
-				SetData2(vint, j, 0, dims2[0], dims2[1], groups[i][j].p->id);
-				SetData2(vint, j, 1, dims2[0], dims2[1], groups[i][j].time);
-				if (groups[i][j].q == NULL)
-				{
-					SetData2(vint, j, 2, dims2[0], dims2[1], -1);
-				}
-				else
-				{
-					SetData2(vint, j, 2, dims2[0], dims2[1], groups[i][j].q->id);
-				}
-			}
-			vvint.push_back(vint);
+			SetData2(F, i, 0, dims[0], dims[1], cores[i]->id);
+			SetData2(F, i, 1, dims[0], dims[1], cores[i]->pid);
+			SetData2(F, i, 2, dims[0], dims[1], cores[i]->qid);
 		}
-		plhs[0] = StoreDataCell(vvint, mxINT32_CLASS, 2, dims, 3);
+		plhs[0] = StoreData(F, mxINT32_CLASS, 2, dims);
 	}
 	if (nlhs >= 2)
 	{
-		const int dims[] = { factory.edges.size(), 7 };
-		vector<float> F(dims[0] * dims[1]);
-		for (int i = 0; i < dims[0]; ++i)
-		{
-			Edge<MAPoint*>* ed = factory.edges[i];
-			SetData2(F, i, 0, dims[0], dims[1], (float)ed->u->key->pid);
-			SetData2(F, i, 1, dims[0], dims[1], (float)ed->u->key->qid);
-			SetData2(F, i, 2, dims[0], dims[1], (float)ed->v->key->pid);
-			SetData2(F, i, 3, dims[0], dims[1], (float)ed->v->key->qid);
-			SetData2(F, i, 4, dims[0], dims[1], (float)ed->u->key->id);
-			SetData2(F, i, 5, dims[0], dims[1], (float)ed->v->key->id);
-			SetData2(F, i, 6, dims[0], dims[1], (float)ed->w);
-		}
-		plhs[1] = StoreData(F, mxINT32_CLASS, 2, dims);
+		plhs[1] = StoreScalar(0, mxINT32_CLASS);
 	}
 	if (nlhs >= 3)
 	{

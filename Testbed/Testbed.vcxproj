@@ -186,7 +186,7 @@
     <ClCompile Include="..\src\TriangulateBourke.cpp" />
     <ClCompile Include="..\src\Triangulation.cpp" />
     <ClCompile Include="..\src\TriangulationHelper.cpp" />
-    <ClCompile Include="TestbedV9B.cpp" />
+    <ClCompile Include="TestbedFindCores.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\IntersectionConvexPolygons.h" />
