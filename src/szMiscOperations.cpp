@@ -329,7 +329,7 @@ GetVisualAngle2(float x1, float y1, float x2, float y2,
 		//return t;
 		return GetVisualAngle(x1, y1, x2, y2, x0, y0);
 	}
-	else if(cw<0)
+	else //if(cw<0)
 	{
 		//return -t;
 		return -GetVisualAngle(x1, y1, x2, y2, x0, y0);

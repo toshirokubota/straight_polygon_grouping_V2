@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <queue>
 
 /*
 Brute force O(n) implementation of extracting a vertex with the minimum d.
@@ -33,16 +34,24 @@ void
 Dijkstra(std::vector<Vertex<T>*>& vertices,
 		 Vertex<T>* source)
 {
-	for(int i=0; i<vertices.size(); ++i)
+	/*struct _vertex_compare{
+		bool operator()(const Vertex<T>* left, const Vertex<T>* right) const { return  left->d > right->d; }
+	};
+
+	std::priority_queue<Vertex<T>*, std::vector<Vertex<T>*>, _vertex_compare> Q;*/
+
+	for (int i = 0; i<vertices.size(); ++i)
 	{
 		vertices[i]->Reset();
 	}
 	source->d = 0;
-
-	vector<Vertex<T>*> Q = vertices;
+	source->color = Gray;
+	vector<Vertex<T>*> Q;
+	Q.push_back(source);
 	while(Q.empty() == false)
 	{
 		Vertex<T>* u = extractMinimum(Q);
+		u->color = Black;
 		for(int i=0; i<u->aList.size(); ++i)
 		{
 			Edge<T>* e = u->aList[i];
@@ -51,6 +60,11 @@ Dijkstra(std::vector<Vertex<T>*>& vertices,
 			{
 				v->d = u->d + e->w;
 				v->pi = u;
+			}
+			if (v->color == White)
+			{
+				Q.push_back(v);
+				v->color = Gray;
 			}
 		}
 	}

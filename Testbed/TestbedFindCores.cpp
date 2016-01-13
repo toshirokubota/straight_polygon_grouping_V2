@@ -142,6 +142,11 @@ collectNeighbors(vector<MAPoint*>& points, Triangulation::Triangulator& trmap, f
 {
 	int n = trmap.points.size();
 	//builds data structures for efficiency
+	map<Triangulation::_Internal::_vertex*, int> vmap;
+	for (int i = 0; i < n; ++i)
+	{
+		vmap[trmap.points[i]] = i;
+	}
 	vector<vector<int>> N(n);
 	for (int i = 0; i < n; ++i)
 	{
@@ -154,12 +159,13 @@ collectNeighbors(vector<MAPoint*>& points, Triangulation::Triangulator& trmap, f
 				N[i].push_back(j);
 			}
 		}*/
+		N[i].push_back(i); //push itself
 		for (int j = 0; j < u->edges.size(); ++j)
 		{
 			Triangulation::_Internal::_vertex* v = u->edges[j]->vertices[0] == u ? u->edges[j]->vertices[1] : u->edges[j]->vertices[0];
 			if (Distance(u->p, v->p) <= thres)
 			{
-				N[i].push_back(j);
+				N[i].push_back(vmap[v]);
 			}
 		}
 	}
@@ -178,15 +184,25 @@ collectNeighbors(vector<MAPoint*>& points, Triangulation::Triangulator& trmap, f
 		MAPoint* p = points[k];
 		for (int i = 0; i<N[p->pid].size(); ++i)
 		{
+			int k1 = N[p->pid][i];
 			for (int j = 0; j < N[p->qid].size(); ++j)
 			{
-				int key = _key(N[p->pid][i], N[p->qid][j], n);
+				int k2 = N[p->qid][j];
+				int key = _key(k1, k2, n);
 				if (key <= maxKey)
 				{
 					MAPoint* q = pmap[key];
+					if (q == p) continue;
 					if (q != NULL)
 					{
-						p->neighbors.insert(q);
+						if (q->p == p->p || q->p == p->q || q->q == p->p || q->q == p->q)
+						{
+							i += 0;
+						}
+						//else //no shared vertex
+						{
+							p->neighbors.insert(q);
+						}
 					}
 				}
 			}
@@ -213,38 +229,108 @@ collectMedialAxisPoints(Triangulation::Triangulator& trmap, float thres)
 	return mapoints;
 }
 
-vector<MAPoint*> locateCores(vector<MAPoint*>& P, float thres)
+vector<MAPoint*> locateCores(vector<MAPoint*>& P, float thres, float thres2)
 {
 	vector<MAPoint*> cores;
 	for (int i = 0; i < P.size(); ++i)
 	{
 		MAPoint* p = P[i];
 		bool bCore = true;
+		vector<MAPoint*> up;
+		vector<MAPoint*> down;
+		if (p->pid == 0 && p->qid == 25)
+		{
+			i += 0;
+		}
 		for (set<MAPoint*>::iterator it = p->neighbors.begin(); it != p->neighbors.end(); ++it)
 		{
 			MAPoint* q = *it;
-			if (Abs(cos(p->theta - q->theta)) > thres)
+			if (Abs(cos(p->theta - q->theta)) > thres) //check for parallelness
 			{
-				if (q->z > p->z)
+				float a = GetVisualAngle2(p->x + cos(p->theta), p->y + sin(p->theta), q->x, q->y, p->x, p->y);
+				if (sin(a) > thres2)
 				{
-					bCore = false;
-					break;
+					up.push_back(q);
+				}
+				else if (-sin(a) > thres2)
+				{
+					down.push_back(q);
 				}
 			}
 		}
-		if (bCore)
+		if (up.size() > 0 && down.size() > 0)
 		{
-			cores.push_back(p);
+			bool bOk = true;
+			for (int i = 0; i < up.size(); ++i)
+			{
+				if (up[i]->z > p->z) bOk = false;
+			}
+			for (int i = 0; i < down.size(); ++i)
+			{
+				if (down[i]->z > p->z) bOk = false;
+			}
+			if (bOk)
+			{
+				cores.push_back(p);
+			}
 		}
 	}
 
-	for (int i = 0; i < cores.size(); ++i)
-	{
-		printf("Core: %d %d %d\n", cores[i]->id, cores[i]->pid, cores[i]->qid);
-	}
 	return cores;
 }
 
+vector<MAPoint*>
+mergeCores(vector<MAPoint*>& cores)
+{
+	vector<Node<MAPoint*>*> nodes;
+	for (int i = 0; i < cores.size(); ++i)
+	{
+		nodes.push_back(makeset(cores[i]));
+	}
+	for (int i = 0; i < nodes.size(); ++i)
+	{
+		MAPoint* p = nodes[i]->key;
+		for (int j = 0; j < nodes.size(); ++j)
+		{
+			if (i == j) continue;
+			MAPoint* q = nodes[j]->key;
+			if (p->id == 0 && q->id == 25)
+			{
+				i += 0;
+			}
+			if (p->neighbors.find(q) != p->neighbors.end())
+			{
+				merge(nodes[i], nodes[j]);
+			}
+		}
+	}
+	//cluster cores that are neighbors
+	vector<Node<MAPoint*>*> reps = clusters(nodes);
+
+	//use the one with the largest Z value as the representative.
+	vector<MAPoint*> X;
+	map<MAPoint*, int> pmap;
+	for (int i = 0; i < reps.size(); ++i)
+	{
+		X.push_back(reps[i]->key);
+		pmap[reps[i]->key] = i;
+	}
+
+	for (int j = 0; j < cores.size(); ++j)
+	{
+		MAPoint* r = findset(nodes[j])->key;
+		int k = pmap[r];
+		if (r->z > X[k]->z)
+		{
+			X[k] = r;
+		}
+	}
+	for (int i = 0; i < nodes.size(); ++i)
+	{
+		delete nodes[i];
+	}
+	return X;
+}
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -279,13 +365,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		const int* dims;
 		ReadScalar(thres, prhs[1], classId);
 	}
-	float maxDist = std::numeric_limits<float>::infinity();
+	float thres2 = 0.95;
 	if (nrhs >= 3)
 	{
 		mxClassID classId;
 		int ndim;
 		const int* dims;
-		ReadScalar(maxDist, prhs[2], classId);
+		ReadScalar(thres2, prhs[2], classId);
+	}
+	float maxDist = std::numeric_limits<float>::infinity();
+	if (nrhs >= 4)
+	{
+		mxClassID classId;
+		int ndim;
+		const int* dims;
+		ReadScalar(maxDist, prhs[3], classId);
 	}
 	MAPoint::_id = 0;
 
@@ -295,7 +389,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	vector<MAPoint*> mapoints = collectMedialAxisPoints(trmap, maxDist);
 	collectNeighbors(mapoints, trmap, unit*1.25);
 
-	vector<MAPoint*> cores = locateCores(mapoints, thres);
+	vector<MAPoint*> cores = locateCores(mapoints, thres, thres2);
+	cores = mergeCores(cores);
+	for (int i = 0; i < cores.size(); ++i)
+	{
+	printf("Core: %d %d %d\n", cores[i]->id, cores[i]->pid, cores[i]->qid);
+	}
 
 	if (nlhs >= 1)
 	{
