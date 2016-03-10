@@ -177,6 +177,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\Hungarian.cpp" />
     <ClCompile Include="..\src\IntersectionConvexPolygons.cpp" />
     <ClCompile Include="..\src\MiscGeometry.cpp" />
     <ClCompile Include="..\src\szConvexHull2D.cpp" />
@@ -186,9 +187,10 @@
     <ClCompile Include="..\src\TriangulateBourke.cpp" />
     <ClCompile Include="..\src\Triangulation.cpp" />
     <ClCompile Include="..\src\TriangulationHelper.cpp" />
-    <ClCompile Include="TestbedDijkstra.cpp" />
+    <ClCompile Include="TestbedHungarian.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Hungarian.h" />
     <ClInclude Include="..\include\IntersectionConvexPolygons.h" />
     <ClInclude Include="..\include\mexFileIO.h" />
     <ClInclude Include="..\include\MiscGeometry.h" />
